@@ -32,37 +32,37 @@
 <div class="section">
   <h2>🔍 Search Lost Items</h2>
   <input id="searchLost" placeholder="Search lost item" oninput="search('lost')">
-  <div id="suggestLost" class="suggest"></div>
+  <div id="sugLost" class="suggest"></div>
 </div>
 
 <!-- SEARCH FOUND -->
 <div class="section">
   <h2>🔍 Search Found Items</h2>
   <input id="searchFound" placeholder="Search found item" oninput="search('found')">
-  <div id="suggestFound" class="suggest"></div>
+  <div id="sugFound" class="suggest"></div>
 </div>
 
-<!-- ADD LOST -->
+<!-- LOST FORM -->
 <div class="section">
-  <h2>🔴 Add Lost Item</h2>
-  <input id="lostName" placeholder="Your Name">
-  <input id="lostContact" placeholder="Contact">
-  <input id="lostItem" placeholder="Item">
-  <input id="lostLocation" placeholder="Location">
-  <button onclick="addItem('lost')">Submit Lost</button>
+  <h2>🔴 Report Lost Item</h2>
+  <input id="lName" placeholder="Your Name">
+  <input id="lContact" placeholder="Contact">
+  <input id="lItem" placeholder="Item Name">
+  <input id="lLocation" placeholder="Last Seen Location">
+  <button onclick="addLost()">Submit Lost</button>
 </div>
 
-<!-- ADD FOUND -->
+<!-- FOUND FORM -->
 <div class="section">
-  <h2>🟢 Add Found Item</h2>
-  <input id="foundName" placeholder="Your Name">
-  <input id="foundContact" placeholder="Contact">
-  <input id="foundItem" placeholder="Item">
-  <input id="foundLocation" placeholder="Location">
-  <button onclick="addItem('found')">Submit Found</button>
+  <h2>🟢 Report Found Item</h2>
+  <input id="fName" placeholder="Your Name">
+  <input id="fContact" placeholder="Contact">
+  <input id="fItem" placeholder="Item Name">
+  <input id="fLocation" placeholder="Found Location">
+  <button onclick="addFound()">Submit Found</button>
 </div>
 
-<!-- LIST -->
+<!-- ITEM LIST -->
 <div class="section">
   <h2>📋 Items</h2>
   <div id="list"></div>
@@ -74,68 +74,86 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 
 <script>
-const firebaseConfig = {
+firebase.initializeApp({
   apiKey: "AIzaSyDKy_RM1zrJS2Ux-mrf-ZSAFG3QJGSvm_c",
   authDomain: "back2you-lite-e6695.firebaseapp.com",
-  projectId: "back2you-lite-e6695",
-  storageBucket: "back2you-lite-e6695.firebasestorage.app",
-  messagingSenderId: "972873481520",
-  appId: "1:972873481520:web:5004e6ca6ee0dde6511cf5"
-};
+  projectId: "back2you-lite-e6695"
+});
 
-firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
+let uid="", items=[];
 
-let uid = "";
-let items = [];
+auth.signInAnonymously().then(r=>uid=r.user.uid);
 
-auth.signInAnonymously().then(r => uid = r.user.uid);
-
-function addItem(type){
-  const n = document.getElementById(type+"Name");
-  const c = document.getElementById(type+"Contact");
-  const i = document.getElementById(type+"Item");
-  const l = document.getElementById(type+"Location");
-
-  if(!n.value||!c.value||!i.value||!l.value) return alert("Fill all fields");
-
-  db.collection("items").add({
-    type,
-    name:n.value,
-    contact:c.value,
-    item:i.value,
-    location:l.value,
-    ownerId:uid,
-    time:new Date().toLocaleString(),
-    ts:firebase.firestore.FieldValue.serverTimestamp()
-  });
-
-  n.value=c.value=i.value=l.value="";
+// FUZZY SEARCH
+function fuzzy(q,t){
+  q=q.toLowerCase(); t=t.toLowerCase();
+  let i=0;
+  for(let c of t) if(c===q[i]) i++;
+  return i===q.length;
 }
 
 function highlight(text,q){
   if(!q) return text;
-  return text.replace(new RegExp(q,"gi"),m=>`<span class="highlight">${m}</span>`);
+  return text.replace(new RegExp(q,"ig"),m=>`<span class="highlight">${m}</span>`);
 }
 
+// ADD LOST
+function addLost(){
+  if(!lName.value||!lContact.value||!lItem.value||!lLocation.value)
+    return alert("Fill all fields");
+
+  db.collection("items").add({
+    type:"lost",
+    name:lName.value,
+    contact:lContact.value,
+    item:lItem.value,
+    location:lLocation.value,
+    ownerId:uid,
+    time:new Date().toLocaleString()
+  });
+
+  lName.value=lContact.value=lItem.value=lLocation.value="";
+}
+
+// ADD FOUND
+function addFound(){
+  if(!fName.value||!fContact.value||!fItem.value||!fLocation.value)
+    return alert("Fill all fields");
+
+  db.collection("items").add({
+    type:"found",
+    name:fName.value,
+    contact:fContact.value,
+    item:fItem.value,
+    location:fLocation.value,
+    ownerId:uid,
+    time:new Date().toLocaleString()
+  });
+
+  fName.value=fContact.value=fItem.value=fLocation.value="";
+}
+
+// SEARCH
 function search(type){
-  const q = document.getElementById(type==="lost"?"searchLost":"searchFound").value.toLowerCase();
-  const sug = document.getElementById(type==="lost"?"suggestLost":"suggestFound");
+  const q=(type==="lost"?searchLost.value:searchFound.value).toLowerCase();
+  const sug=(type==="lost"?sugLost:sugFound);
   sug.innerHTML="";
 
-  items.filter(i=>i.type===type && i.item.toLowerCase().includes(q))
-       .slice(0,5)
-       .forEach(i=>{
-         const d=document.createElement("div");
-         d.innerHTML=highlight(i.item,q);
-         d.onclick=()=>document.getElementById(i.id).scrollIntoView({behavior:"smooth"});
-         sug.appendChild(d);
-       });
+  items.filter(i=>i.type===type && fuzzy(q,i.item))
+    .slice(0,5)
+    .forEach(i=>{
+      const d=document.createElement("div");
+      d.innerHTML=highlight(i.item,q);
+      d.onclick=()=>document.getElementById(i.id).scrollIntoView({behavior:"smooth"});
+      sug.appendChild(d);
+    });
 
   render(q,type);
 }
 
+// RENDER
 function render(q="",type=""){
   list.innerHTML="";
   items.forEach(i=>{
@@ -143,31 +161,30 @@ function render(q="",type=""){
     list.innerHTML+=`
       <div class="card ${i.type}" id="${i.id}">
         <b>${i.type.toUpperCase()}</b><br>
-        👤 ${i.name}<br>
-        📞 ${i.contact}<br>
         📦 ${highlight(i.item,q)}<br>
         📍 ${i.location}<br>
         🕒 ${i.time}<br>
-        ${i.ownerId===uid ? `
+        ${i.ownerId===uid?`
           <button class="edit" onclick="editItem('${i.id}','${i.item}')">Edit</button>
-          <button class="danger" onclick="del('${i.id}')">Delete</button>
-        ` : ``}
-      </div>
-    `;
+          <button class="danger" onclick="delItem('${i.id}')">Delete</button>
+        `:""}
+      </div>`;
   });
 }
 
-function del(id){
-  if(confirm("Delete item?")) db.collection("items").doc(id).delete();
-}
-
+// EDIT / DELETE
 function editItem(id,old){
-  const n = prompt("Edit item name",old);
+  const n=prompt("Edit item name",old);
   if(n) db.collection("items").doc(id).update({item:n});
 }
 
-db.collection("items").orderBy("ts","desc")
-.onSnapshot(s=>{
+function delItem(id){
+  if(confirm("Delete item?"))
+    db.collection("items").doc(id).delete();
+}
+
+// LIVE UPDATE
+db.collection("items").onSnapshot(s=>{
   items=[];
   s.forEach(d=>items.push({id:d.id,...d.data()}));
   render();
