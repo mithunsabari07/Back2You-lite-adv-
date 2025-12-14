@@ -3,22 +3,24 @@
 <head>
   <title>Back2You Lite</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
   <style>
-    body { font-family: Arial; background:#f2f2f2; padding:15px; }
-    h1,h2 { text-align:center; }
-    input,button { width:100%; padding:10px; margin:5px 0; }
-    button { background:#007bff; color:white; border:none; }
-    .section { background:white; padding:15px; margin-top:15px; border-radius:8px; }
-    .card { border:1px solid #ccc; padding:10px; margin-top:10px; border-radius:5px; }
-    .lost { background:#ffecec; }
-    .found { background:#ecffec; }
-    .highlight { background:yellow; font-weight:bold; }
-    .suggest { background:#fff; border:1px solid #ccc; }
-    .suggest div { padding:6px; cursor:pointer; }
-    .suggest div:hover { background:#eee; }
-    .danger { background:#dc3545; color:white; }
-    .edit { background:#ffc107; color:black; }
+    body { font-family: Arial; background:#f2f2f2; padding:15px }
+    h1,h2 { text-align:center }
+    input,button {
+      width:100%; padding:10px; margin:6px 0;
+      border-radius:6px; border:1px solid #ccc;
+    }
+    button { background:#007bff; color:white; border:none }
+    .section { background:white; padding:15px; border-radius:8px; margin-top:15px }
+    .card { padding:10px; border-radius:6px; margin-top:10px; border:1px solid #ccc }
+    .lost { background:#ffecec }
+    .found { background:#ecffec }
+    .highlight { background:yellow; font-weight:bold }
+    .suggest { background:#fff; border:1px solid #ccc }
+    .suggest div { padding:6px; cursor:pointer }
+    .suggest div:hover { background:#eee }
+    .danger { background:#dc3545 }
+    .edit { background:#28a745 }
   </style>
 </head>
 
@@ -26,41 +28,47 @@
 
 <h1>Back2You Lite</h1>
 
+<!-- SEARCH LOST -->
 <div class="section">
   <h2>🔍 Search Lost Items</h2>
-  <input id="searchLost" placeholder="Search lost item" oninput="searchItems('lost')">
+  <input id="searchLost" placeholder="Search lost item" oninput="search('lost')">
   <div id="suggestLost" class="suggest"></div>
 </div>
 
+<!-- SEARCH FOUND -->
 <div class="section">
   <h2>🔍 Search Found Items</h2>
-  <input id="searchFound" placeholder="Search found item" oninput="searchItems('found')">
+  <input id="searchFound" placeholder="Search found item" oninput="search('found')">
   <div id="suggestFound" class="suggest"></div>
 </div>
 
+<!-- ADD LOST -->
 <div class="section">
   <h2>🔴 Add Lost Item</h2>
   <input id="lostName" placeholder="Your Name">
   <input id="lostContact" placeholder="Contact">
   <input id="lostItem" placeholder="Item">
   <input id="lostLocation" placeholder="Location">
-  <button onclick="submit('lost')">Submit Lost</button>
+  <button onclick="addItem('lost')">Submit Lost</button>
 </div>
 
+<!-- ADD FOUND -->
 <div class="section">
   <h2>🟢 Add Found Item</h2>
   <input id="foundName" placeholder="Your Name">
   <input id="foundContact" placeholder="Contact">
   <input id="foundItem" placeholder="Item">
   <input id="foundLocation" placeholder="Location">
-  <button onclick="submit('found')">Submit Found</button>
+  <button onclick="addItem('found')">Submit Found</button>
 </div>
 
+<!-- LIST -->
 <div class="section">
   <h2>📋 Items</h2>
   <div id="list"></div>
 </div>
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -81,20 +89,23 @@ const auth = firebase.auth();
 
 let uid = "";
 let items = [];
-const ADMIN_UIDS = ["PUT_YOUR_UID_HERE"];
 
-auth.signInAnonymously().then(res => uid = res.user.uid);
+auth.signInAnonymously().then(r => uid = r.user.uid);
 
-function submit(type){
+function addItem(type){
   const n = document.getElementById(type+"Name");
   const c = document.getElementById(type+"Contact");
   const i = document.getElementById(type+"Item");
   const l = document.getElementById(type+"Location");
 
-  if(!n.value||!c.value||!i.value||!l.value) return alert("Fill all");
+  if(!n.value||!c.value||!i.value||!l.value) return alert("Fill all fields");
 
   db.collection("items").add({
-    type,name:n.value,contact:c.value,item:i.value,location:l.value,
+    type,
+    name:n.value,
+    contact:c.value,
+    item:i.value,
+    location:l.value,
     ownerId:uid,
     time:new Date().toLocaleString(),
     ts:firebase.firestore.FieldValue.serverTimestamp()
@@ -103,12 +114,12 @@ function submit(type){
   n.value=c.value=i.value=l.value="";
 }
 
-function highlight(text, q){
+function highlight(text,q){
   if(!q) return text;
-  return text.replace(new RegExp(q,"gi"), m=>`<span class="highlight">${m}</span>`);
+  return text.replace(new RegExp(q,"gi"),m=>`<span class="highlight">${m}</span>`);
 }
 
-function searchItems(type){
+function search(type){
   const q = document.getElementById(type==="lost"?"searchLost":"searchFound").value.toLowerCase();
   const sug = document.getElementById(type==="lost"?"suggestLost":"suggestFound");
   sug.innerHTML="";
@@ -122,25 +133,27 @@ function searchItems(type){
          sug.appendChild(d);
        });
 
-  render(q);
+  render(q,type);
 }
 
-function render(q=""){
+function render(q="",type=""){
   list.innerHTML="";
   items.forEach(i=>{
+    if(type && i.type!==type) return;
     list.innerHTML+=`
-    <div class="card ${i.type}" id="${i.id}">
-      <b>${i.type.toUpperCase()}</b><br>
-      👤 ${i.name}<br>
-      📞 ${i.contact}<br>
-      📦 ${highlight(i.item,q)}<br>
-      📍 ${i.location}<br>
-      🕒 ${i.time}<br>
-
-      ${i.ownerId===uid ? `<button class="edit" onclick="editItem('${i.id}')">Edit</button>` : ``}
-      ${i.ownerId===uid ? `<button class="danger" onclick="del('${i.id}')">Delete</button>` : ``}
-      ${ADMIN_UIDS.includes(uid) ? `<button class="danger" onclick="del('${i.id}')">Admin Delete</button>` : ``}
-    </div>`;
+      <div class="card ${i.type}" id="${i.id}">
+        <b>${i.type.toUpperCase()}</b><br>
+        👤 ${i.name}<br>
+        📞 ${i.contact}<br>
+        📦 ${highlight(i.item,q)}<br>
+        📍 ${i.location}<br>
+        🕒 ${i.time}<br>
+        ${i.ownerId===uid ? `
+          <button class="edit" onclick="editItem('${i.id}','${i.item}')">Edit</button>
+          <button class="danger" onclick="del('${i.id}')">Delete</button>
+        ` : ``}
+      </div>
+    `;
   });
 }
 
@@ -148,13 +161,13 @@ function del(id){
   if(confirm("Delete item?")) db.collection("items").doc(id).delete();
 }
 
-function editItem(id){
-  const i = items.find(x=>x.id===id);
-  const val = prompt("Edit item name", i.item);
-  if(val) db.collection("items").doc(id).update({item:val});
+function editItem(id,old){
+  const n = prompt("Edit item name",old);
+  if(n) db.collection("items").doc(id).update({item:n});
 }
 
-db.collection("items").orderBy("ts","desc").onSnapshot(s=>{
+db.collection("items").orderBy("ts","desc")
+.onSnapshot(s=>{
   items=[];
   s.forEach(d=>items.push({id:d.id,...d.data()}));
   render();
