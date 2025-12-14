@@ -1,27 +1,23 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Back2You Lite</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body { font-family: Arial; background:#f2f2f2; padding:15px }
-    h1,h2 { text-align:center }
-    input,button {
-      width:100%; padding:10px; margin:6px 0;
-      border-radius:6px; border:1px solid #ccc;
-    }
-    button { background:#007bff; color:white; border:none }
-    .section { background:white; padding:15px; border-radius:8px; margin-top:15px }
-    .card { padding:10px; border-radius:6px; margin-top:10px; border:1px solid #ccc }
-    .lost { background:#ffecec }
-    .found { background:#ecffec }
-    .highlight { background:yellow; font-weight:bold }
-    .suggest { background:#fff; border:1px solid #ccc }
-    .suggest div { padding:6px; cursor:pointer }
-    .suggest div:hover { background:#eee }
-    .danger { background:#dc3545 }
-    .edit { background:#28a745 }
-  </style>
+<title>Back2You Lite</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body{font-family:Arial;background:#f2f2f2;padding:15px}
+h1,h2{text-align:center}
+input,button{width:100%;padding:10px;margin:6px 0;border-radius:6px;border:1px solid #ccc}
+button{background:#007bff;color:white;border:none}
+.section{background:#fff;padding:15px;border-radius:8px;margin-top:15px}
+.card{border:1px solid #ccc;padding:10px;margin-top:10px;border-radius:6px}
+.lost{background:#ffecec}
+.found{background:#ecffec}
+.suggest{background:#fff;border:1px solid #ccc}
+.suggest div{padding:6px;cursor:pointer}
+.suggest div:hover{background:#eee}
+.edit{background:#28a745}
+.del{background:#dc3545}
+</style>
 </head>
 
 <body>
@@ -30,164 +26,129 @@
 
 <!-- SEARCH LOST -->
 <div class="section">
-  <h2>🔍 Search Lost Items</h2>
-  <input id="searchLost" placeholder="Search lost item" oninput="search('lost')">
-  <div id="sugLost" class="suggest"></div>
+<h2>🔍 Search Lost Items</h2>
+<input id="sLost" oninput="search('lost')" placeholder="Search lost item">
+<div id="sgLost" class="suggest"></div>
 </div>
 
 <!-- SEARCH FOUND -->
 <div class="section">
-  <h2>🔍 Search Found Items</h2>
-  <input id="searchFound" placeholder="Search found item" oninput="search('found')">
-  <div id="sugFound" class="suggest"></div>
+<h2>🔍 Search Found Items</h2>
+<input id="sFound" oninput="search('found')" placeholder="Search found item">
+<div id="sgFound" class="suggest"></div>
 </div>
 
-<!-- LOST FORM -->
+<!-- ADD LOST -->
 <div class="section">
-  <h2>🔴 Report Lost Item</h2>
-  <input id="lName" placeholder="Your Name">
-  <input id="lContact" placeholder="Contact">
-  <input id="lItem" placeholder="Item Name">
-  <input id="lLocation" placeholder="Last Seen Location">
-  <button onclick="addLost()">Submit Lost</button>
+<h2>🔴 Add Lost Item</h2>
+<input id="ln" placeholder="Your Name">
+<input id="lc" placeholder="Contact">
+<input id="li" placeholder="Lost Item">
+<input id="ll" placeholder="Location">
+<button onclick="addLost()">Submit Lost</button>
 </div>
 
-<!-- FOUND FORM -->
+<!-- ADD FOUND -->
 <div class="section">
-  <h2>🟢 Report Found Item</h2>
-  <input id="fName" placeholder="Your Name">
-  <input id="fContact" placeholder="Contact">
-  <input id="fItem" placeholder="Item Name">
-  <input id="fLocation" placeholder="Found Location">
-  <button onclick="addFound()">Submit Found</button>
+<h2>🟢 Add Found Item</h2>
+<input id="fn" placeholder="Your Name">
+<input id="fc" placeholder="Contact">
+<input id="fi" placeholder="Found Item">
+<input id="fl" placeholder="Location">
+<button onclick="addFound()">Submit Found</button>
 </div>
 
-<!-- ITEM LIST -->
+<!-- LIST -->
 <div class="section">
-  <h2>📋 Items</h2>
-  <div id="list"></div>
+<h2>📋 Items</h2>
+<div id="list"></div>
 </div>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 
 <script>
 firebase.initializeApp({
-  apiKey: "AIzaSyDKy_RM1zrJS2Ux-mrf-ZSAFG3QJGSvm_c",
-  authDomain: "back2you-lite-e6695.firebaseapp.com",
-  projectId: "back2you-lite-e6695"
+ apiKey:"AIzaSyDKy_RM1zrJS2Ux-mrf-ZSAFG3QJGSvm_c",
+ authDomain:"back2you-lite-e6695.firebaseapp.com",
+ projectId:"back2you-lite-e6695"
 });
 
-const db = firebase.firestore();
-const auth = firebase.auth();
-let uid="", items=[];
+const db=firebase.firestore();
+let items=[];
 
-auth.signInAnonymously().then(r=>uid=r.user.uid);
-
-// FUZZY SEARCH
 function fuzzy(q,t){
-  q=q.toLowerCase(); t=t.toLowerCase();
-  let i=0;
-  for(let c of t) if(c===q[i]) i++;
-  return i===q.length;
+ q=q.toLowerCase(); t=t.toLowerCase();
+ let i=0;
+ for(let c of t) if(c===q[i]) i++;
+ return i===q.length;
 }
 
-function highlight(text,q){
-  if(!q) return text;
-  return text.replace(new RegExp(q,"ig"),m=>`<span class="highlight">${m}</span>`);
-}
-
-// ADD LOST
 function addLost(){
-  if(!lName.value||!lContact.value||!lItem.value||!lLocation.value)
-    return alert("Fill all fields");
-
-  db.collection("items").add({
-    type:"lost",
-    name:lName.value,
-    contact:lContact.value,
-    item:lItem.value,
-    location:lLocation.value,
-    ownerId:uid,
-    time:new Date().toLocaleString()
-  });
-
-  lName.value=lContact.value=lItem.value=lLocation.value="";
+ if(!ln.value||!lc.value||!li.value||!ll.value) return alert("Fill all");
+ db.collection("items").add({
+  type:"lost",name:ln.value,contact:lc.value,
+  item:li.value,location:ll.value,
+  time:new Date().toLocaleString()
+ });
+ ln.value=lc.value=li.value=ll.value="";
 }
 
-// ADD FOUND
 function addFound(){
-  if(!fName.value||!fContact.value||!fItem.value||!fLocation.value)
-    return alert("Fill all fields");
-
-  db.collection("items").add({
-    type:"found",
-    name:fName.value,
-    contact:fContact.value,
-    item:fItem.value,
-    location:fLocation.value,
-    ownerId:uid,
-    time:new Date().toLocaleString()
-  });
-
-  fName.value=fContact.value=fItem.value=fLocation.value="";
+ if(!fn.value||!fc.value||!fi.value||!fl.value) return alert("Fill all");
+ db.collection("items").add({
+  type:"found",name:fn.value,contact:fc.value,
+  item:fi.value,location:fl.value,
+  time:new Date().toLocaleString()
+ });
+ fn.value=fc.value=fi.value=fl.value="";
 }
 
-// SEARCH
 function search(type){
-  const q=(type==="lost"?searchLost.value:searchFound.value).toLowerCase();
-  const sug=(type==="lost"?sugLost:sugFound);
-  sug.innerHTML="";
-
-  items.filter(i=>i.type===type && fuzzy(q,i.item))
-    .slice(0,5)
-    .forEach(i=>{
-      const d=document.createElement("div");
-      d.innerHTML=highlight(i.item,q);
-      d.onclick=()=>document.getElementById(i.id).scrollIntoView({behavior:"smooth"});
-      sug.appendChild(d);
-    });
-
-  render(q,type);
+ let q=(type==="lost"?sLost.value:sFound.value).toLowerCase();
+ let sg=type==="lost"?sgLost:sgFound;
+ sg.innerHTML="";
+ items.filter(i=>i.type===type && fuzzy(q,i.item))
+ .slice(0,5).forEach(i=>{
+  let d=document.createElement("div");
+  d.innerText=i.item;
+  d.onclick=()=>document.getElementById(i.id).scrollIntoView({behavior:"smooth"});
+  sg.appendChild(d);
+ });
+ render(q,type);
 }
 
-// RENDER
 function render(q="",type=""){
-  list.innerHTML="";
-  items.forEach(i=>{
-    if(type && i.type!==type) return;
-    list.innerHTML+=`
-      <div class="card ${i.type}" id="${i.id}">
-        <b>${i.type.toUpperCase()}</b><br>
-        📦 ${highlight(i.item,q)}<br>
-        📍 ${i.location}<br>
-        🕒 ${i.time}<br>
-        ${i.ownerId===uid?`
-          <button class="edit" onclick="editItem('${i.id}','${i.item}')">Edit</button>
-          <button class="danger" onclick="delItem('${i.id}')">Delete</button>
-        `:""}
-      </div>`;
-  });
+ list.innerHTML="";
+ items.forEach(i=>{
+  if(type && i.type!==type) return;
+  list.innerHTML+=`
+  <div class="card ${i.type}" id="${i.id}">
+   <b>${i.type.toUpperCase()}</b><br>
+   👤 ${i.name}<br>
+   📞 ${i.contact}<br>
+   📦 ${i.item}<br>
+   📍 ${i.location}<br>
+   🕒 ${i.time}<br>
+   <button class="edit" onclick="edit('${i.id}','${i.item}')">Edit</button>
+   <button class="del" onclick="del('${i.id}')">Delete</button>
+  </div>`;
+ });
 }
 
-// EDIT / DELETE
-function editItem(id,old){
-  const n=prompt("Edit item name",old);
-  if(n) db.collection("items").doc(id).update({item:n});
+function edit(id,o){
+ let n=prompt("Edit item",o);
+ if(n) db.collection("items").doc(id).update({item:n});
 }
 
-function delItem(id){
-  if(confirm("Delete item?"))
-    db.collection("items").doc(id).delete();
+function del(id){
+ if(confirm("Delete?")) db.collection("items").doc(id).delete();
 }
 
-// LIVE UPDATE
 db.collection("items").onSnapshot(s=>{
-  items=[];
-  s.forEach(d=>items.push({id:d.id,...d.data()}));
-  render();
+ items=[];
+ s.forEach(d=>items.push({id:d.id,...d.data()}));
+ render();
 });
 </script>
 
