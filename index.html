@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Back2You Lite</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    body { font-family: Arial; background:#f2f2f2; padding:15px; }
+    h1,h2 { text-align:center; }
+    input,button { width:100%; padding:10px; margin:5px 0; }
+    button { background:#007bff; color:white; border:none; }
+    .section { background:white; padding:15px; margin-top:15px; border-radius:8px; }
+    .card { border:1px solid #ccc; padding:10px; margin-top:10px; border-radius:5px; }
+    .lost { background:#ffecec; }
+    .found { background:#ecffec; }
+    .highlight { background:yellow; font-weight:bold; }
+    .suggest { background:#fff; border:1px solid #ccc; }
+    .suggest div { padding:6px; cursor:pointer; }
+    .suggest div:hover { background:#eee; }
+    .danger { background:#dc3545; color:white; }
+    .edit { background:#ffc107; color:black; }
+  </style>
+</head>
+
+<body>
+
+<h1>Back2You Lite</h1>
+
+<div class="section">
+  <h2>🔍 Search Lost Items</h2>
+  <input id="searchLost" placeholder="Search lost item" oninput="searchItems('lost')">
+  <div id="suggestLost" class="suggest"></div>
+</div>
+
+<div class="section">
+  <h2>🔍 Search Found Items</h2>
+  <input id="searchFound" placeholder="Search found item" oninput="searchItems('found')">
+  <div id="suggestFound" class="suggest"></div>
+</div>
+
+<div class="section">
+  <h2>🔴 Add Lost Item</h2>
+  <input id="lostName" placeholder="Your Name">
+  <input id="lostContact" placeholder="Contact">
+  <input id="lostItem" placeholder="Item">
+  <input id="lostLocation" placeholder="Location">
+  <button onclick="submit('lost')">Submit Lost</button>
+</div>
+
+<div class="section">
+  <h2>🟢 Add Found Item</h2>
+  <input id="foundName" placeholder="Your Name">
+  <input id="foundContact" placeholder="Contact">
+  <input id="foundItem" placeholder="Item">
+  <input id="foundLocation" placeholder="Location">
+  <button onclick="submit('found')">Submit Found</button>
+</div>
+
+<div class="section">
+  <h2>📋 Items</h2>
+  <div id="list"></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDKy_RM1zrJS2Ux-mrf-ZSAFG3QJGSvm_c",
+  authDomain: "back2you-lite-e6695.firebaseapp.com",
+  projectId: "back2you-lite-e6695",
+  storageBucket: "back2you-lite-e6695.firebasestorage.app",
+  messagingSenderId: "972873481520",
+  appId: "1:972873481520:web:5004e6ca6ee0dde6511cf5"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+let uid = "";
+let items = [];
+const ADMIN_UIDS = ["PUT_YOUR_UID_HERE"];
+
+auth.signInAnonymously().then(res => uid = res.user.uid);
+
+function submit(type){
+  const n = document.getElementById(type+"Name");
+  const c = document.getElementById(type+"Contact");
+  const i = document.getElementById(type+"Item");
+  const l = document.getElementById(type+"Location");
+
+  if(!n.value||!c.value||!i.value||!l.value) return alert("Fill all");
+
+  db.collection("items").add({
+    type,name:n.value,contact:c.value,item:i.value,location:l.value,
+    ownerId:uid,
+    time:new Date().toLocaleString(),
+    ts:firebase.firestore.FieldValue.serverTimestamp()
+  });
+
+  n.value=c.value=i.value=l.value="";
+}
+
+function highlight(text, q){
+  if(!q) return text;
+  return text.replace(new RegExp(q,"gi"), m=>`<span class="highlight">${m}</span>`);
+}
+
+function searchItems(type){
+  const q = document.getElementById(type==="lost"?"searchLost":"searchFound").value.toLowerCase();
+  const sug = document.getElementById(type==="lost"?"suggestLost":"suggestFound");
+  sug.innerHTML="";
+
+  items.filter(i=>i.type===type && i.item.toLowerCase().includes(q))
+       .slice(0,5)
+       .forEach(i=>{
+         const d=document.createElement("div");
+         d.innerHTML=highlight(i.item,q);
+         d.onclick=()=>document.getElementById(i.id).scrollIntoView({behavior:"smooth"});
+         sug.appendChild(d);
+       });
+
+  render(q);
+}
+
+function render(q=""){
+  list.innerHTML="";
+  items.forEach(i=>{
+    list.innerHTML+=`
+    <div class="card ${i.type}" id="${i.id}">
+      <b>${i.type.toUpperCase()}</b><br>
+      👤 ${i.name}<br>
+      📞 ${i.contact}<br>
+      📦 ${highlight(i.item,q)}<br>
+      📍 ${i.location}<br>
+      🕒 ${i.time}<br>
+
+      ${i.ownerId===uid ? `<button class="edit" onclick="editItem('${i.id}')">Edit</button>` : ``}
+      ${i.ownerId===uid ? `<button class="danger" onclick="del('${i.id}')">Delete</button>` : ``}
+      ${ADMIN_UIDS.includes(uid) ? `<button class="danger" onclick="del('${i.id}')">Admin Delete</button>` : ``}
+    </div>`;
+  });
+}
+
+function del(id){
+  if(confirm("Delete item?")) db.collection("items").doc(id).delete();
+}
+
+function editItem(id){
+  const i = items.find(x=>x.id===id);
+  const val = prompt("Edit item name", i.item);
+  if(val) db.collection("items").doc(id).update({item:val});
+}
+
+db.collection("items").orderBy("ts","desc").onSnapshot(s=>{
+  items=[];
+  s.forEach(d=>items.push({id:d.id,...d.data()}));
+  render();
+});
+</script>
+
+</body>
+</html>
