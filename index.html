@@ -1,174 +1,323 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Back2You Lite</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-body{font-family:Arial;background:#f2f2f2;padding:15px}
-h1,h2{text-align:center}
-input,button{width:100%;padding:10px;margin:6px 0;border-radius:6px;border:1px solid #ccc}
-button{background:#007bff;color:white;border:none}
-.section{background:#fff;padding:15px;border-radius:8px;margin-top:15px}
-.card{border:1px solid #ccc;padding:10px;margin-top:10px;border-radius:6px}
-.lost{background:#ffecec}
-.found{background:#ecffec}
-.suggest{background:#fff;border:1px solid #ccc}
-.suggest div{padding:6px;cursor:pointer}
-.suggest div:hover{background:#eee}
-.edit{background:#28a745}
-.del{background:#dc3545}
-</style>
-</head>
+  <title>Back2You Lite</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    /* CSS STYLING */
+    body { font-family: sans-serif; background: #f4f6f8; padding: 20px; max-width: 600px; margin: 0 auto; }
+    h2, h3 { text-align: center; color: #333; margin-top: 20px; }
+    
+    /* Input & Button Styles */
+    input, select, button {
+      width: 100%; padding: 12px; margin: 6px 0;
+      border: 1px solid #ddd; border-radius: 8px;
+      box-sizing: border-box; font-size: 16px;
+    }
+    button { color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    button:hover { opacity: 0.9; }
+    
+    /* Action Buttons */
+    .btn-delete { background: #ff4444; width: 48%; font-size: 14px; padding: 8px; }
+    .btn-edit { background: #ffbb33; color: black; width: 48%; font-size: 14px; padding: 8px; margin-right: 2%; }
+    
+    /* Post Buttons */
+    .btn-lost { background: #dc3545; }
+    .btn-found { background: #28a745; }
+    
+    /* EXPAND BARS */
+    .bar-lost { 
+        background: #dc3545; margin-top: 30px; padding: 15px; font-size: 18px; border-radius: 8px;
+        text-align: left; width: 100%; display: flex; justify-content: space-between; align-items: center;
+    }
+    .bar-found { 
+        background: #28a745; margin-top: 15px; padding: 15px; font-size: 18px; border-radius: 8px;
+        text-align: left; width: 100%; display: flex; justify-content: space-between; align-items: center;
+    }
 
+    /* Card Styles */
+    .card { background: white; padding: 15px; margin-top: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .lost-card { border-left: 5px solid #ff4444; }
+    .found-card { border-left: 5px solid #28a745; }
+
+    /* Image Preview Style */
+    .item-img {
+        width: 100%; max-height: 250px; object-fit: contain;
+        border-radius: 5px; margin-top: 10px; background: #f0f0f0; border: 1px solid #ccc;
+    }
+    
+    .actions { margin-top: 10px; display: flex; }
+    
+    /* Hidden List Containers */
+    #lostContainer, #foundContainer { 
+        display: none; background: #fff0f0; padding: 10px; 
+        border-radius: 0 0 8px 8px; margin-bottom: 20px;
+    }
+    #foundContainer { background: #f0fff4; }
+
+    /* Search Input Style */
+    .search-bar { border: 2px solid #ccc; background: #fff; margin-bottom: 10px; }
+    
+    /* ✨ SEARCH HIGHLIGHT COLOR */
+    mark { background-color: yellow; color: black; border-radius: 3px; padding: 0 2px; }
+  </style>
+</head>
 <body>
 
-<h1>Back2You Lite</h1>
+  <h2>Back2You Lite</h2>
 
-<!-- SEARCH LOST -->
-<div class="section">
-<h2>🔍 Search Lost Items</h2>
-<input id="sLost" oninput="search('lost')" placeholder="Search lost item">
-<div id="sgLost" class="suggest"></div>
-</div>
+  <div id="appArea">
+    
+    <div class="card lost-card">
+      <h3 style="color:#dc3545; margin-top:0;">🔴 Report Lost Item</h3>
+      <input id="lName" placeholder="👤 Your Name">
+      <input id="lItem" placeholder="📦 What did you lose?">
+      <input id="lLoc" placeholder="📍 Where?">
+      <input id="lContact" placeholder="📞 Contact Info">
+      <button class="btn-lost" onclick="addLostItem()">Post Lost Report</button>
+    </div>
 
-<!-- SEARCH FOUND -->
-<div class="section">
-<h2>🔍 Search Found Items</h2>
-<input id="sFound" oninput="search('found')" placeholder="Search found item">
-<div id="sgFound" class="suggest"></div>
-</div>
+    <div class="card found-card">
+      <h3 style="color:#28a745; margin-top:0;">🟢 Report Found Item</h3>
+      <input id="fName" placeholder="👤 Your Name">
+      <input id="fItem" placeholder="📦 What did you find?">
+      <input id="fLoc" placeholder="📍 Where?">
+      <input id="fContact" placeholder="📞 Contact Info">
+      
+      <label style="font-size:14px; color:#555; display:block; margin-top:10px;">📸 Upload Photo (Max 1MB):</label>
+      <input type="file" id="fImage" accept="image/*">
 
-<!-- ADD LOST -->
-<div class="section">
-<h2>🔴 Add Lost Item</h2>
-<input id="ln" placeholder="Your Name">
-<input id="lc" placeholder="Contact">
-<input id="li" placeholder="Lost Item">
-<input id="ll" placeholder="Location">
-<button onclick="addLost()">Submit Lost</button>
-</div>
+      <button class="btn-found" id="foundBtn" onclick="addFoundItem()">Post Found Report</button>
+    </div>
 
-<!-- ADD FOUND -->
-<div class="section">
-<h2>🟢 Add Found Item</h2>
-<input id="fn" placeholder="Your Name">
-<input id="fc" placeholder="Contact">
-<input id="fi" placeholder="Found Item">
-<input id="fl" placeholder="Location">
-<button onclick="addFound()">Submit Found</button>
-</div>
+    <hr style="margin:30px 0; border:0; border-top:1px solid #ccc;">
 
-<!-- LOST REPORTS -->
-<div class="section">
-<h2>🔴 Lost Reports</h2>
-<div id="lostList"></div>
-</div>
+    <button class="bar-lost" onclick="toggleSection('lostContainer')">
+        <span>🔴 View Lost Items</span>
+        <span>▼</span>
+    </button>
+    
+    <div id="lostContainer">
+        <input class="search-bar" id="searchLost" placeholder="🔍 Fuzzy Search Lost..." onkeyup="filterList('lost')">
+        <div id="lostList">Loading...</div>
+    </div>
 
-<!-- FOUND REPORTS -->
-<div class="section">
-<h2>🟢 Found Reports</h2>
-<div id="foundList"></div>
-</div>
+    <button class="bar-found" onclick="toggleSection('foundContainer')">
+        <span>🟢 View Found Items</span>
+        <span>▼</span>
+    </button>
 
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <div id="foundContainer">
+        <input class="search-bar" id="searchFound" placeholder="🔍 Fuzzy Search Found..." onkeyup="filterList('found')">
+        <div id="foundList">Loading...</div>
+    </div>
 
-<script>
-firebase.initializeApp({
- apiKey:"AIzaSyDKy_RM1zrJS2Ux-mrf-ZSAFG3QJGSvm_c",
- authDomain:"back2you-lite-e6695.firebaseapp.com",
- projectId:"back2you-lite-e6695"
-});
+  </div>
 
-const db=firebase.firestore();
-let items=[];
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 
-function fuzzy(q,t){
- q=q.toLowerCase(); t=t.toLowerCase();
- let i=0;
- for(let c of t) if(c===q[i]) i++;
- return i===q.length;
-}
+  <script>
+    // --- 1. CONFIGURATION ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyDKy_RM1zrJS2Ux-mrf-ZSAFG3QJGSvm_c",
+      authDomain: "back2you-lite-e6695.firebaseapp.com",
+      projectId: "back2you-lite-e6695"
+    };
 
-function addLost(){
- if(!ln.value||!lc.value||!li.value||!ll.value) return alert("Fill all");
- db.collection("items").add({
-  type:"lost",
-  name:ln.value,
-  contact:lc.value,
-  item:li.value,
-  location:ll.value,
-  time:new Date().toLocaleString()
- });
- ln.value=lc.value=li.value=ll.value="";
-}
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+    let currentUser = null;
+    let allItems = []; 
 
-function addFound(){
- if(!fn.value||!fc.value||!fi.value||!fl.value) return alert("Fill all");
- db.collection("items").add({
-  type:"found",
-  name:fn.value,
-  contact:fc.value,
-  item:fi.value,
-  location:fl.value,
-  time:new Date().toLocaleString()
- });
- fn.value=fc.value=fi.value=fl.value="";
-}
+    auth.signInAnonymously().catch(e => console.log(e));
 
-function search(type){
- let q=(type==="lost"?sLost.value:sFound.value).toLowerCase();
- let sg=type==="lost"?sgLost:sgFound;
- sg.innerHTML="";
- items.filter(i=>i.type===type && fuzzy(q,i.item))
- .slice(0,5).forEach(i=>{
-  let d=document.createElement("div");
-  d.innerText=i.item;
-  d.onclick=()=>document.getElementById(i.id).scrollIntoView({behavior:"smooth"});
-  sg.appendChild(d);
- });
- render(type);
-}
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        currentUser = user;
+        renderList();
+      }
+    });
 
-function render(filter=""){
- lostList.innerHTML="";
- foundList.innerHTML="";
+    // --- 2. 🧠 FUZZY SEARCH & HIGHLIGHT LOGIC (EXTRACTED) ---
+    
+    // The extracted Fuzzy Logic
+    function fuzzy(q, t) {
+      if(!q) return true; // if search is empty, show everything
+      q = q.toLowerCase(); 
+      t = (t || "").toLowerCase();
+      let i = 0;
+      for (let c of t) if (c === q[i]) i++;
+      return i === q.length;
+    }
 
- items.forEach(i=>{
-  if(filter && i.type!==filter) return;
+    // The Highlight Logic (Adds yellow background)
+    function highlight(text, search) {
+        if (!search || !text) return text;
+        const regex = new RegExp(`(${search})`, 'gi');
+        // This wraps matched text in <mark> tags
+        return text.replace(regex, '<mark>$1</mark>');
+    }
 
-  let card=`
-  <div class="card ${i.type}" id="${i.id}">
-   <b>${i.type.toUpperCase()}</b><br>
-   👤 ${i.name}<br>
-   📞 ${i.contact}<br>
-   📦 ${i.item}<br>
-   📍 ${i.location}<br>
-   🕒 ${i.time}<br>
-   <button class="edit" onclick="edit('${i.id}','${i.item}')">Edit</button>
-   <button class="del" onclick="del('${i.id}')">Delete</button>
-  </div>`;
+    // --- 3. TOGGLE FUNCTION ---
+    function toggleSection(id) {
+        const container = document.getElementById(id);
+        
+        if (container.style.display === "block") {
+            container.style.display = "none";
+        } else {
+            document.getElementById('lostContainer').style.display = 'none';
+            document.getElementById('foundContainer').style.display = 'none';
+            container.style.display = "block";
+            setTimeout(() => {
+                container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        }
+    }
 
-  if(i.type==="lost") lostList.innerHTML+=card;
-  else foundList.innerHTML+=card;
- });
-}
+    // --- 4. ADD FUNCTIONS ---
+    function addLostItem() {
+      saveToDb("lost", "lName", "lItem", "lLoc", "lContact", null, null);
+    }
 
-function edit(id,o){
- let n=prompt("Edit item",o);
- if(n) db.collection("items").doc(id).update({item:n});
-}
+    function addFoundItem() {
+      const fileInput = document.getElementById("fImage");
+      const file = fileInput.files[0];
+      const btn = document.getElementById("foundBtn");
+      
+      if (file && file.size > 800000) return alert("File too big! Use a screenshot.");
 
-function del(id){
- if(confirm("Delete this report?")) db.collection("items").doc(id).delete();
-}
+      if (file) {
+          btn.innerText = "Uploading...";
+          btn.disabled = true;
+          const reader = new FileReader();
+          reader.onload = function(e) {
+              saveToDb("found", "fName", "fItem", "fLoc", "fContact", e.target.result, btn);
+          };
+          reader.readAsDataURL(file);
+      } else {
+          saveToDb("found", "fName", "fItem", "fLoc", "fContact", null, btn);
+      }
+    }
 
-db.collection("items").onSnapshot(s=>{
- items=[];
- s.forEach(d=>items.push({id:d.id,...d.data()}));
- render();
-});
-</script>
+    function saveToDb(type, idName, idItem, idLoc, idContact, imageBase64, btn) {
+      if (!currentUser) return alert("Waiting for connection...");
+      
+      const nameVal = document.getElementById(idName).value;
+      const itemVal = document.getElementById(idItem).value;
+      const locVal = document.getElementById(idLoc).value;
+      const contactVal = document.getElementById(idContact).value;
+
+      if (!nameVal || !itemVal || !locVal || !contactVal) {
+          if(btn) { btn.disabled=false; btn.innerText="Post Found Report"; }
+          return alert("Please fill all text fields");
+      }
+
+      db.collection("items").add({
+        type: type,
+        name: nameVal,
+        item: itemVal,
+        location: locVal,
+        contact: contactVal,
+        imageUrl: imageBase64, 
+        ownerId: currentUser.uid, 
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => {
+        alert("Report Posted!");
+        document.getElementById(idName).value = "";
+        document.getElementById(idItem).value = "";
+        document.getElementById(idLoc).value = "";
+        document.getElementById(idContact).value = "";
+        if(type==='found') {
+            document.getElementById("fImage").value = "";
+            btn.innerText = "Post Found Report";
+            btn.disabled = false;
+        }
+      }).catch(err => {
+          alert("Error: " + err.message);
+          if(btn) { btn.disabled=false; btn.innerText="Post Found Report"; }
+      });
+    }
+
+    function editItem(id, oldName, oldItem, oldLoc, oldContact) {
+        const newName = prompt("Edit Name:", oldName);
+        if(newName === null) return; 
+        const newItem = prompt("Edit Item:", oldItem);
+        const newLoc = prompt("Edit Location:", oldLoc);
+        const newContact = prompt("Edit Contact:", oldContact);
+
+        if(newName && newItem && newLoc && newContact) {
+            db.collection("items").doc(id).update({
+                name: newName, item: newItem, location: newLoc, contact: newContact
+            });
+        }
+    }
+
+    function deleteItem(id) {
+      if (confirm("Delete this?")) {
+        db.collection("items").doc(id).delete();
+      }
+    }
+
+    // --- 5. RENDER & SEARCH FUNCTION (Updated with Highlights) ---
+    function renderList() {
+      db.collection("items").orderBy("timestamp", "desc").onSnapshot(snapshot => {
+        allItems = [];
+        snapshot.forEach(doc => {
+            allItems.push({ id: doc.id, ...doc.data() });
+        });
+        filterList('lost');
+        filterList('found');
+      });
+    }
+
+    function filterList(type) {
+        // Get search input
+        const searchInput = type === 'lost' ? document.getElementById("searchLost").value : document.getElementById("searchFound").value;
+        const listDiv = type === 'lost' ? document.getElementById("lostList") : document.getElementById("foundList");
+        
+        listDiv.innerHTML = "";
+
+        // Filter using extracted FUZZY logic
+        const filtered = allItems.filter(d => 
+            d.type === type && (
+                fuzzy(searchInput, d.item) || 
+                fuzzy(searchInput, d.location) || 
+                fuzzy(searchInput, d.name)
+            )
+        );
+
+        if (filtered.length === 0) {
+            listDiv.innerHTML = "<p style='text-align:center; color:#777'>No items found.</p>";
+            return;
+        }
+
+        filtered.forEach(data => {
+            const imageHTML = data.imageUrl ? `<img src="${data.imageUrl}" class="item-img">` : "";
+            const cardClass = type === 'lost' ? 'lost-card' : 'found-card';
+            
+            // Apply Highlight Logic to text
+            const hName = highlight(data.name || "Anonymous", searchInput);
+            const hItem = highlight(data.item, searchInput);
+            const hLoc = highlight(data.location, searchInput);
+
+            listDiv.innerHTML += `
+            <div class="card ${cardClass}">
+              👤 <b>${hName}</b><br>
+              📦 <strong>${hItem}</strong><br>
+              📍 ${hLoc}<br>
+              📞 ${data.contact}<br>
+              ${imageHTML}
+              <div class="actions">
+                  <button class="btn-edit" onclick="editItem('${data.id}', '${data.name}', '${data.item}', '${data.location}', '${data.contact}')">✏️ Edit</button>
+                  <button class="btn-delete" onclick="deleteItem('${data.id}')">🗑️ Delete</button>
+              </div>
+            </div>`;
+        });
+    }
+  </script>
 
 </body>
 </html>
