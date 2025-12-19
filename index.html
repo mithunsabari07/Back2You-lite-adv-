@@ -98,7 +98,7 @@
     </button>
     
     <div id="lostContainer">
-        <input class="search-bar" id="searchLost" placeholder="🔍 Fuzzy Search Lost..." onkeyup="filterList('lost')">
+        <input class="search-bar" id="searchLost" placeholder="🔍 Search Lost Items..." onkeyup="filterList('lost')">
         <div id="lostList">Loading...</div>
     </div>
 
@@ -108,7 +108,7 @@
     </button>
 
     <div id="foundContainer">
-        <input class="search-bar" id="searchFound" placeholder="🔍 Fuzzy Search Found..." onkeyup="filterList('found')">
+        <input class="search-bar" id="searchFound" placeholder="🔍 Search Found Items..." onkeyup="filterList('found')">
         <div id="foundList">Loading...</div>
     </div>
 
@@ -141,11 +141,10 @@
       }
     });
 
-    // --- 2. 🧠 FUZZY SEARCH & HIGHLIGHT LOGIC (EXTRACTED) ---
+    // --- 2. FUZZY SEARCH & HIGHLIGHT LOGIC ---
     
-    // The extracted Fuzzy Logic
     function fuzzy(q, t) {
-      if(!q) return true; // if search is empty, show everything
+      if(!q) return true; 
       q = q.toLowerCase(); 
       t = (t || "").toLowerCase();
       let i = 0;
@@ -153,11 +152,9 @@
       return i === q.length;
     }
 
-    // The Highlight Logic (Adds yellow background)
     function highlight(text, search) {
         if (!search || !text) return text;
         const regex = new RegExp(`(${search})`, 'gi');
-        // This wraps matched text in <mark> tags
         return text.replace(regex, '<mark>$1</mark>');
     }
 
@@ -261,7 +258,7 @@
       }
     }
 
-    // --- 5. RENDER & SEARCH FUNCTION (Updated with Highlights) ---
+    // --- 5. RENDER & SEARCH FUNCTION ---
     function renderList() {
       db.collection("items").orderBy("timestamp", "desc").onSnapshot(snapshot => {
         allItems = [];
@@ -280,7 +277,7 @@
         
         listDiv.innerHTML = "";
 
-        // Filter using extracted FUZZY logic
+        // Filter using fuzzy logic
         const filtered = allItems.filter(d => 
             d.type === type && (
                 fuzzy(searchInput, d.item) || 
@@ -298,7 +295,7 @@
             const imageHTML = data.imageUrl ? `<img src="${data.imageUrl}" class="item-img">` : "";
             const cardClass = type === 'lost' ? 'lost-card' : 'found-card';
             
-            // Apply Highlight Logic to text
+            // Apply Highlight
             const hName = highlight(data.name || "Anonymous", searchInput);
             const hItem = highlight(data.item, searchInput);
             const hLoc = highlight(data.location, searchInput);
