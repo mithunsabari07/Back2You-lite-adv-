@@ -60,30 +60,6 @@
     
     /* ✨ SEARCH HIGHLIGHT COLOR */
     mark { background-color: yellow; color: black; border-radius: 3px; padding: 0 2px; }
-
-    /* 🆕 EDIT POPUP MODAL STYLES */
-    .modal {
-        display: none; /* Hidden by default */
-        position: fixed; 
-        z-index: 999; 
-        left: 0; top: 0; width: 100%; height: 100%; 
-        background-color: rgba(0,0,0,0.5); /* Black w/ opacity */
-        justify-content: center; align-items: center;
-    }
-    .modal-content {
-        background-color: #fefefe;
-        padding: 20px;
-        border-radius: 12px;
-        width: 80%;
-        max-width: 300px;
-        text-align: center;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    }
-    .modal-btn {
-        margin: 5px 0;
-        width: 100%;
-        background: #007bff;
-    }
   </style>
 </head>
 <body>
@@ -138,17 +114,6 @@
 
   </div>
 
-  <div id="editModal" class="modal">
-    <div class="modal-content">
-        <h3>✏️ What to edit?</h3>
-        <button class="modal-btn" onclick="saveEdit('name')">👤 Name</button>
-        <button class="modal-btn" onclick="saveEdit('item')">📦 Item</button>
-        <button class="modal-btn" onclick="saveEdit('location')">📍 Location</button>
-        <button class="modal-btn" onclick="saveEdit('contact')">📞 Contact</button>
-        <button class="modal-btn" style="background:#777; margin-top:10px;" onclick="closeModal()">Cancel</button>
-    </div>
-  </div>
-
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -167,10 +132,6 @@
     let currentUser = null;
     let allItems = []; 
 
-    // EDIT VARIABLES
-    let currentEditId = null;
-    let currentEditData = {};
-
     auth.signInAnonymously().catch(e => console.log(e));
 
     auth.onAuthStateChanged(user => {
@@ -180,7 +141,8 @@
       }
     });
 
-    // --- 2. FUZZY SEARCH & HIGHLIGHT ---
+    // --- 2. FUZZY SEARCH & HIGHLIGHT LOGIC ---
+    
     function fuzzy(q, t) {
       if(!q) return true; 
       q = q.toLowerCase(); 
@@ -199,6 +161,7 @@
     // --- 3. TOGGLE FUNCTION ---
     function toggleSection(id) {
         const container = document.getElementById(id);
+        
         if (container.style.display === "block") {
             container.style.display = "none";
         } else {
@@ -275,30 +238,16 @@
       });
     }
 
-    // --- 5. NEW EDIT POPUP LOGIC ---
-    function openEditModal(id, n, i, l, c) {
-        currentEditId = id;
-        currentEditData = { name: n, item: i, location: l, contact: c };
-        document.getElementById('editModal').style.display = 'flex';
-    }
+    function editItem(id, oldName, oldItem, oldLoc, oldContact) {
+        const newName = prompt("Edit Name:", oldName);
+        if(newName === null) return; 
+        const newItem = prompt("Edit Item:", oldItem);
+        const newLoc = prompt("Edit Location:", oldLoc);
+        const newContact = prompt("Edit Contact:", oldContact);
 
-    function closeModal() {
-        document.getElementById('editModal').style.display = 'none';
-        currentEditId = null;
-    }
-
-    function saveEdit(field) {
-        const oldVal = currentEditData[field];
-        const newVal = prompt("Enter new " + field + ":", oldVal);
-        
-        if (newVal && newVal !== oldVal) {
-            let updateObj = {};
-            updateObj[field] = newVal;
-            
-            db.collection("items").doc(currentEditId).update(updateObj)
-            .then(() => {
-                alert("Updated!");
-                closeModal();
+        if(newName && newItem && newLoc && newContact) {
+            db.collection("items").doc(id).update({
+                name: newName, item: newItem, location: newLoc, contact: newContact
             });
         }
     }
@@ -309,7 +258,7 @@
       }
     }
 
-    // --- 6. RENDER LIST ---
+    // --- 5. RENDER & SEARCH FUNCTION ---
     function renderList() {
       db.collection("items").orderBy("timestamp", "desc").onSnapshot(snapshot => {
         allItems = [];
@@ -322,11 +271,13 @@
     }
 
     function filterList(type) {
+        // Get search input
         const searchInput = type === 'lost' ? document.getElementById("searchLost").value : document.getElementById("searchFound").value;
         const listDiv = type === 'lost' ? document.getElementById("lostList") : document.getElementById("foundList");
         
         listDiv.innerHTML = "";
 
+        // Filter using fuzzy logic
         const filtered = allItems.filter(d => 
             d.type === type && (
                 fuzzy(searchInput, d.item) || 
@@ -344,11 +295,11 @@
             const imageHTML = data.imageUrl ? `<img src="${data.imageUrl}" class="item-img">` : "";
             const cardClass = type === 'lost' ? 'lost-card' : 'found-card';
             
+            // Apply Highlight
             const hName = highlight(data.name || "Anonymous", searchInput);
             const hItem = highlight(data.item, searchInput);
             const hLoc = highlight(data.location, searchInput);
 
-            // UPDATED EDIT BUTTON: Calls openEditModal
             listDiv.innerHTML += `
             <div class="card ${cardClass}">
               👤 <b>${hName}</b><br>
@@ -357,7 +308,7 @@
               📞 ${data.contact}<br>
               ${imageHTML}
               <div class="actions">
-                  <button class="btn-edit" onclick="openEditModal('${data.id}', '${data.name}', '${data.item}', '${data.location}', '${data.contact}')">✏️ Edit</button>
+                  <button class="btn-edit" onclick="editItem('${data.id}', '${data.name}', '${data.item}', '${data.location}', '${data.contact}')">✏️ Edit</button>
                   <button class="btn-delete" onclick="deleteItem('${data.id}')">🗑️ Delete</button>
               </div>
             </div>`;
