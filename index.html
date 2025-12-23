@@ -118,6 +118,36 @@
       gap: 15px;
     }
 
+    /* Dark Mode Toggle Button - NEW STYLE */
+    .dark-mode-toggle {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 1001;
+    }
+
+    .dark-mode-btn {
+      background: rgba(255, 255, 255, 0.2);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: var(--transition);
+      font-size: 1.2rem;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .dark-mode-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: rotate(30deg);
+    }
+
     /* Stats Bar */
     .stats-bar {
       display: grid;
@@ -1036,6 +1066,13 @@
       margin-top: 5px;
     }
 
+    .contact-email {
+      color: var(--primary-color);
+      font-weight: 600;
+      margin-top: 10px;
+      font-size: 1rem;
+    }
+
     /* Responsive Design */
     @media (max-width: 768px) {
       .header-content {
@@ -1068,10 +1105,35 @@
       .stats-bar {
         grid-template-columns: 1fr;
       }
+
+      .dark-mode-toggle {
+        top: 10px;
+        right: 10px;
+      }
+
+      .dark-mode-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .footer-links {
+        flex-direction: column;
+        gap: 10px;
+      }
     }
   </style>
 </head>
 <body>
+  <!-- Dark Mode Toggle Button -->
+  <div class="dark-mode-toggle">
+    <button class="dark-mode-btn" onclick="toggleDarkMode()" aria-label="Toggle Dark Mode" title="Toggle Dark Mode">
+      <i class="fas fa-moon"></i>
+    </button>
+  </div>
+
   <!-- Header -->
   <header>
     <div class="container header-content">
@@ -1083,10 +1145,6 @@
         </div>
       </div>
       <div class="header-controls">
-        <button id="darkModeToggle" class="btn btn-outline btn-icon" onclick="toggleDarkMode()" 
-                aria-label="Toggle Dark Mode" title="Toggle Dark Mode">
-          <i class="fas fa-moon"></i>
-        </button>
         <button class="btn btn-primary" onclick="showQuickGuide()">
           <i class="fas fa-question-circle"></i> Quick Guide
         </button>
@@ -1653,8 +1711,11 @@
         <a href="#" class="footer-link" onclick="showContact()">Contact Us</a>
         <a href="#" class="footer-link" onclick="showAbout()">About</a>
       </div>
+      <div class="contact-email">
+        <i class="fas fa-envelope"></i> mithunsabari17@gmail.com
+      </div>
       <div class="copyright">
-        &copy; 2023 Back2You. College Lost & Found Management System.
+        &copy; 2026 Back2You. College Lost & Found Management System.
       </div>
       <div class="team-name">
         Developed by <strong>Team Nexus</strong>
@@ -1795,7 +1856,7 @@
     }
 
     function updateDarkModeIcon() {
-      const icon = document.querySelector('#darkModeToggle i');
+      const icon = document.querySelector('.dark-mode-btn i');
       if (document.body.classList.contains('dark-mode')) {
         icon.classList.remove('fa-moon');
         icon.classList.add('fa-sun');
@@ -2619,7 +2680,7 @@
     }
 
     function showContact() {
-      showToast('Contact: Email: lostfound@college.edu | College Office: Room 101, Main Building', 'info', 8000);
+      showToast('Contact: Email: mithunsabari17@gmail.com', 'info', 8000);
     }
 
     function showAbout() {
@@ -2637,6 +2698,12 @@
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
         document.getElementById('searchLost').focus();
+      }
+      
+      // Ctrl/Cmd + D toggles dark mode
+      if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+        e.preventDefault();
+        toggleDarkMode();
       }
     });
   </script>
