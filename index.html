@@ -2673,6 +2673,10 @@
                 other: '📦 Other'
             };
             
+            // UPDATED: Different button text for lost vs found items
+            const claimButtonText = isLost ? 'I think I found this' : 'I think this is mine';
+            const claimButtonIcon = isLost ? 'fa-hand-holding' : 'fa-flag';
+            
             return `
                 <div class="item-card ${type} ${item.matched ? 'matched' : ''}" data-id="${item.id}">
                     <div class="item-header">
@@ -2734,7 +2738,7 @@
                             </button>
                         ` : `
                             <button class="btn btn-outline" onclick="claimItem('${type}', '${item.id}')">
-                                <i class="fas fa-flag"></i> I think this is mine
+                                <i class="fas ${claimButtonIcon}"></i> ${claimButtonText}
                             </button>
                         `}
                     </div>
@@ -3207,8 +3211,12 @@
             
             if (item) {
                 const contactInfo = item.contact || item.userEmail || 'No contact provided';
+                const message = type === 'lost' 
+                    ? `You think you found this lost item.<br>Contact owner: ${contactInfo}<br>Reported by: ${item.userName || 'Unknown'}`
+                    : `You think this found item is yours.<br>Contact finder: ${contactInfo}<br>Reported by: ${item.userName || 'Unknown'}`;
+                    
                 showToast(
-                    `Item: ${item.item}<br>Contact owner: ${contactInfo}<br>Reported by: ${item.userName || 'Unknown'}`,
+                    message,
                     'info',
                     10000
                 );
