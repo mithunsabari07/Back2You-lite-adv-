@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <!-- EmailJS SDK -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
         /* Modern CSS Variables */
         :root {
@@ -272,21 +274,47 @@
             padding: 0 20px;
         }
 
-        /* Header & Navigation */
+        /* Header & Navigation - FIXED STICKY HEADER */
         header {
             background: var(--primary-gradient);
             color: white;
-            padding: 1.5rem 0;
-            box-shadow: var(--shadow);
+            padding: 1.2rem 0;
+            box-shadow: var(--shadow-lg);
             position: sticky;
             top: 0;
             z-index: 1000;
+            transition: var(--transition);
         }
 
         .header-content {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            transition: var(--transition);
+        }
+
+        /* Smaller header when scrolling */
+        header.small-header {
+            padding: 0.5rem 0;
+        }
+
+        header.small-header .logo h1 {
+            font-size: 1.5rem;
+        }
+
+        header.small-header .logo p {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        header.small-header .user-welcome {
+            font-size: 0.85rem;
+            padding: 6px 12px;
+        }
+
+        header.small-header .logout-btn {
+            padding: 6px 12px;
+            font-size: 0.85rem;
         }
 
         .logo {
@@ -300,18 +328,21 @@
             background: rgba(255, 255, 255, 0.2);
             padding: 10px;
             border-radius: 50%;
+            transition: var(--transition);
         }
 
         .logo h1 {
             font-size: 1.8rem;
             font-weight: 700;
             margin: 0;
+            transition: var(--transition);
         }
 
         .logo p {
             font-size: 0.9rem;
             opacity: 0.9;
             margin: 0;
+            transition: var(--transition);
         }
 
         /* User Profile in Header */
@@ -328,6 +359,7 @@
             padding: 8px 15px;
             border-radius: 20px;
             border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: var(--transition);
         }
 
         .logout-btn {
@@ -352,7 +384,7 @@
 
         /* Dark Mode Toggle Button */
         .dark-mode-toggle {
-            position: absolute;
+            position: fixed;
             top: 20px;
             right: 20px;
             z-index: 1001;
@@ -1389,6 +1421,21 @@
                 padding: 15px;
                 font-size: 0.95rem;
             }
+
+            /* Small header adjustments for mobile */
+            header.small-header .logo h1 {
+                font-size: 1.3rem;
+            }
+
+            header.small-header .logo i {
+                font-size: 1.5rem;
+                padding: 8px;
+            }
+
+            header.small-header .user-profile-header {
+                flex-direction: row;
+                gap: 8px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -1408,7 +1455,7 @@
                 <h1>Back2You</h1>
                 <p>College Lost & Found Platform</p>
             </div>
-            
+
             <div class="tabs">
                 <button class="tab-btn active" onclick="showTab('login')">
                     <i class="fas fa-sign-in-alt"></i> Login
@@ -1417,7 +1464,7 @@
                     <i class="fas fa-user-plus"></i> Register
                 </button>
             </div>
-            
+
             <!-- Login Tab -->
             <div id="loginTab" class="tab-content active">
                 <form id="loginForm" onsubmit="handleLogin(event)">
@@ -1426,23 +1473,23 @@
                         <input type="text" class="form-control" id="loginUsername" required 
                                placeholder="Enter your username" autocomplete="username">
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label">Password</label>
                         <input type="password" class="form-control" id="loginPassword" required 
                                placeholder="Enter your password" autocomplete="current-password">
                     </div>
-                    
+
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-sign-in-alt"></i> Sign In
                     </button>
-                    
+
                     <div class="info">
                         Don't have an account? <a href="#" onclick="showTab('register')">Register here</a>
                     </div>
                 </form>
             </div>
-            
+
             <!-- Register Tab -->
             <div id="registerTab" class="tab-content">
                 <form id="registerForm" onsubmit="handleRegister(event)">
@@ -1451,41 +1498,47 @@
                         <input type="text" class="form-control" id="regName" required 
                                placeholder="Your full name">
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label">Username</label>
                         <input type="text" class="form-control" id="regUsername" required 
                                placeholder="Choose a username">
                     </div>
-                    
+
+                    <div class="form-group">
+                        <label class="form-label">Email <span class="required">*</span></label>
+                        <input type="email" class="form-control" id="regEmail" required
+                               placeholder="Your college email address">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Phone Number (Optional)</label>
+                        <input type="tel" class="form-control" id="regPhone"
+                               placeholder="Your phone number">
+                    </div>
+
                     <div class="form-group">
                         <label class="form-label">Password</label>
                         <input type="password" class="form-control" id="regPassword" required minlength="6"
                                placeholder="At least 6 characters">
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label">Confirm Password</label>
                         <input type="password" class="form-control" id="regConfirmPassword" required
                                placeholder="Confirm your password">
                     </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Email (optional)</label>
-                        <input type="email" class="form-control" id="regEmail"
-                               placeholder="Your email address">
-                    </div>
-                    
+
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-user-plus"></i> Create Account
                     </button>
-                    
+
                     <div class="info">
                         Already have an account? <a href="#" onclick="showTab('login')">Login here</a>
                     </div>
                 </form>
             </div>
-            
+
             <div id="message" class="message"></div>
         </div>
     </div>
@@ -1500,7 +1553,7 @@
         </div>
 
         <!-- Header -->
-        <header>
+        <header id="mainHeader">
             <div class="container header-content">
                 <div class="logo">
                     <i class="fas fa-search-location"></i>
@@ -1517,7 +1570,7 @@
                             <i class="fas fa-sign-out-alt"></i> Logout
                         </button>
                     </div>
-                    
+
                     <button class="btn btn-primary" onclick="showQuickGuide()">
                         <i class="fas fa-question-circle"></i> Quick Guide
                     </button>
@@ -1579,7 +1632,7 @@
                         <h2><i class="fas fa-exclamation-triangle"></i> Report a Lost Item</h2>
                         <p>Help us reunite you with your lost belongings by providing detailed information below.</p>
                     </div>
-                    
+
                     <form id="lostForm" onsubmit="handleLostFormSubmit(event)">
                         <div class="form-grid">
                             <div class="form-group">
@@ -1590,16 +1643,24 @@
                                 <input class="form-control" id="lName" type="text" required 
                                        placeholder="Enter your full name">
                             </div>
-                            
+
                             <div class="form-group">
-                                <label class="form-label" for="lContact">
-                                    <i class="fas fa-phone"></i> Contact Information
+                                <label class="form-label" for="lEmail">
+                                    <i class="fas fa-envelope"></i> Email Address
                                     <span class="required">*</span>
                                 </label>
-                                <input class="form-control" id="lContact" type="text" required 
-                                       placeholder="Phone number or email address">
+                                <input class="form-control" id="lEmail" type="email" required 
+                                       placeholder="Your email address">
                             </div>
-                            
+
+                            <div class="form-group">
+                                <label class="form-label" for="lPhone">
+                                    <i class="fas fa-phone"></i> Phone Number (Optional)
+                                </label>
+                                <input class="form-control" id="lPhone" type="tel" 
+                                       placeholder="Your phone number">
+                            </div>
+
                             <div class="form-group">
                                 <label class="form-label" for="lItem">
                                     <i class="fas fa-box"></i> Item Name
@@ -1608,7 +1669,7 @@
                                 <input class="form-control" id="lItem" type="text" required 
                                        placeholder="e.g., Laptop, ID Card, Keys, Calculator">
                             </div>
-                            
+
                             <div class="form-group">
                                 <label class="form-label" for="lCategory">
                                     <i class="fas fa-tag"></i> Category
@@ -1626,7 +1687,7 @@
                                     <option value="other">📦 Other</option>
                                 </select>
                             </div>
-                            
+
                             <div class="form-group">
                                 <label class="form-label" for="lDate">
                                     <i class="fas fa-calendar"></i> Date Lost
@@ -1634,14 +1695,14 @@
                                 </label>
                                 <input class="form-control" id="lDate" type="date" required>
                             </div>
-                            
+
                             <div class="form-group">
                                 <label class="form-label" for="lTime">
                                     <i class="fas fa-clock"></i> Approximate Time
                                 </label>
                                 <input class="form-control" id="lTime" type="time">
                             </div>
-                            
+
                             <div class="form-group full-width">
                                 <label class="form-label" for="lLoc">
                                     <i class="fas fa-map-marker-alt"></i> Location Where Lost
@@ -1649,7 +1710,7 @@
                                 <input class="form-control" id="lLoc" type="text" 
                                        placeholder="e.g., Physics Lab, Library, Cafeteria, Classroom A">
                             </div>
-                            
+
                             <div class="form-group full-width">
                                 <label class="form-label" for="lDesc">
                                     <i class="fas fa-align-left"></i> Detailed Description
@@ -1662,7 +1723,7 @@
         • Contents (if bag/wallet)
         • Serial number (if electronics)"></textarea>
                             </div>
-                            
+
                             <div class="form-group full-width">
                                 <label class="form-label">
                                     <i class="fas fa-images"></i> Upload Reference Photos (Optional)
@@ -1678,7 +1739,7 @@
                                 <div id="lostImagePreview" class="image-grid"></div>
                             </div>
                         </div>
-                        
+
                         <div class="form-actions">
                             <button type="reset" class="btn btn-outline">
                                 <i class="fas fa-redo"></i> Clear Form
@@ -1698,7 +1759,7 @@
                         <h2><i class="fas fa-check-circle"></i> Report a Found Item</h2>
                         <p>Help reunite lost items with their owners by providing detailed information below.</p>
                     </div>
-                    
+
                     <!-- Form Steps -->
                     <div class="form-steps">
                         <div class="form-step active" onclick="goToStep(1)">
@@ -1714,7 +1775,7 @@
                             <div class="step-label">Photos & Contact</div>
                         </div>
                     </div>
-                    
+
                     <!-- Multi-step Form -->
                     <form id="foundForm" onsubmit="handleFoundFormSubmit(event)">
                         <!-- Step 1: Basic Information -->
@@ -1731,12 +1792,19 @@
                                                placeholder="Enter your full name">
                                     </div>
                                     <div class="form-group">
-                                        <label class="form-label" for="fContact">
-                                            Contact Information
+                                        <label class="form-label" for="fEmail">
+                                            Email Address
                                             <span class="required">*</span>
                                         </label>
-                                        <input class="form-control" id="fContact" type="text" required 
-                                               placeholder="Phone number or email address">
+                                        <input class="form-control" id="fEmail" type="email" required 
+                                               placeholder="Your email address">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" for="fPhone">
+                                            Phone Number (Optional)
+                                        </label>
+                                        <input class="form-control" id="fPhone" type="tel" 
+                                               placeholder="Your phone number">
                                     </div>
                                     <div class="form-group">
                                         <label class="form-label" for="fOrganization">
@@ -1746,7 +1814,7 @@
                                                placeholder="e.g., Computer Science, Faculty, Student">
                                     </div>
                                 </div>
-                                
+
                                 <div class="detail-card">
                                     <h4><i class="fas fa-map-marker-alt"></i> Location Details</h4>
                                     <div class="form-group">
@@ -1772,14 +1840,14 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="form-actions">
                                 <button type="button" class="btn btn-outline" onclick="goToStep(2)">
                                     Next <i class="fas fa-arrow-right"></i>
                                 </button>
                             </div>
                         </div>
-                        
+
                         <!-- Step 2: Item Details -->
                         <div id="foundStep2" class="form-page">
                             <div class="found-details-grid">
@@ -1823,7 +1891,7 @@
                                         </select>
                                     </div>
                                 </div>
-                                
+
                                 <div class="detail-card">
                                     <h4><i class="fas fa-clipboard-list"></i> Additional Details</h4>
                                     <div class="form-group">
@@ -1849,7 +1917,7 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="form-group full-width">
                                 <label class="form-label" for="fDesc">
                                     <i class="fas fa-align-left"></i> Detailed Description
@@ -1862,7 +1930,7 @@
         • Any identifiers (student ID, name)
         • State of the item"></textarea>
                             </div>
-                            
+
                             <div class="form-actions">
                                 <button type="button" class="btn btn-outline" onclick="goToStep(1)">
                                     <i class="fas fa-arrow-left"></i> Back
@@ -1872,14 +1940,14 @@
                                 </button>
                             </div>
                         </div>
-                        
+
                         <!-- Step 3: Photos & Contact -->
                         <div id="foundStep3" class="form-page">
                             <div class="found-details-grid">
                                 <div class="detail-card">
                                     <h4><i class="fas fa-camera"></i> Item Photos</h4>
                                     <p class="small-text">Clear photos help owners identify their items faster.</p>
-                                    
+
                                     <div class="file-upload" onclick="document.getElementById('fImage').click()">
                                         <i class="fas fa-camera"></i>
                                         <p>Click to upload clear photos</p>
@@ -1888,10 +1956,10 @@
                                         <input id="fImage" type="file" accept="image/*" multiple 
                                                onchange="handleFoundImageUpload(event)">
                                     </div>
-                                    
+
                                     <div id="foundImagePreview" class="image-grid"></div>
                                 </div>
-                                
+
                                 <div class="detail-card">
                                     <h4><i class="fas fa-hand-holding-heart"></i> Safe Keeping</h4>
                                     <div class="form-group">
@@ -1921,7 +1989,7 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="form-group full-width">
                                 <label class="form-label" for="fNotes">
                                     <i class="fas fa-sticky-note"></i> Additional Notes (Optional)
@@ -1929,7 +1997,7 @@
                                 <textarea class="form-control" id="fNotes" rows="3"
                                           placeholder="Any additional information that might help the owner identify the item..."></textarea>
                             </div>
-                            
+
                             <div class="form-actions">
                                 <button type="button" class="btn btn-outline" onclick="goToStep(2)">
                                     <i class="fas fa-arrow-left"></i> Back
@@ -1968,6 +2036,9 @@
                     <button class="filter-btn" onclick="filterItems('lost', 'keys')">Keys</button>
                     <button class="filter-btn" onclick="filterItems('lost', 'books')">Books</button>
                     <button class="filter-btn" onclick="filterItems('lost', 'other')">Other</button>
+                    <button class="filter-btn matched-filter" onclick="filterMatchedItems()">
+                        <i class="fas fa-handshake"></i> Matched
+                    </button>
                 </div>
                 <div id="lostList" class="items-list">
                     <div class="spinner-container">
@@ -2000,6 +2071,9 @@
                     <button class="filter-btn" onclick="filterItems('found', 'keys')">Keys</button>
                     <button class="filter-btn" onclick="filterItems('found', 'books')">Books</button>
                     <button class="filter-btn" onclick="filterItems('found', 'other')">Other</button>
+                    <button class="filter-btn matched-filter" onclick="filterMatchedItems()">
+                        <i class="fas fa-handshake"></i> Matched
+                    </button>
                 </div>
                 <div id="foundList" class="items-list">
                     <div class="spinner-container">
@@ -2046,12 +2120,16 @@
                                placeholder="e.g., Physics Lab, Library, Cafeteria">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Description</label>
-                        <textarea class="form-control" id="editDesc" rows="3"></textarea>
+                        <label class="form-label">Email</label>
+                        <input class="form-control" id="editEmail" type="email" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Contact Info</label>
-                        <input class="form-control" id="editContact" type="text" required>
+                        <label class="form-label">Phone (Optional)</label>
+                        <input class="form-control" id="editPhone" type="tel">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" id="editDesc" rows="3"></textarea>
                     </div>
                     <div style="display: flex; gap: 10px; margin-top: 20px;">
                         <button type="submit" class="btn btn-primary" style="flex: 1;">
@@ -2116,6 +2194,14 @@
         const storage = firebase.storage();
         const usersCollection = db.collection("users");
 
+        // ===== EMAILJS CONFIGURATION =====
+        // Initialize EmailJS with your public key
+        emailjs.init("NF4lBdK5sNbLjoy-G"); // Updated with your public key
+        
+        // EmailJS Service ID and Template ID
+        const EMAILJS_SERVICE_ID = "service_r5d517c"; // Your service ID from dashboard
+        const EMAILJS_TEMPLATE_ID = "template_9qyjs7j"; // Your template ID
+
         // ===== LOGIN/REGISTRATION FUNCTIONS =====
         function showTab(tabName) {
             // Hide all tabs
@@ -2125,7 +2211,7 @@
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
-            
+
             // Show selected tab
             if (tabName === 'login') {
                 document.getElementById('loginTab').classList.add('active');
@@ -2134,7 +2220,7 @@
                 document.getElementById('registerTab').classList.add('active');
                 document.querySelectorAll('.tab-btn')[1].classList.add('active');
             }
-            
+
             clearMessage();
         }
 
@@ -2160,29 +2246,37 @@
 
         async function handleRegister(event) {
             event.preventDefault();
-            
+
             const name = document.getElementById('regName').value.trim();
             const username = document.getElementById('regUsername').value.trim().toLowerCase();
+            const email = document.getElementById('regEmail').value.trim().toLowerCase();
+            const phone = document.getElementById('regPhone').value.trim();
             const password = document.getElementById('regPassword').value;
             const confirmPassword = document.getElementById('regConfirmPassword').value;
-            const email = document.getElementById('regEmail').value.trim().toLowerCase();
-            
+
             // Validation
             if (password !== confirmPassword) {
                 showMessage('Passwords do not match!', 'error');
                 return;
             }
-            
+
             if (password.length < 6) {
                 showMessage('Password must be at least 6 characters', 'error');
                 return;
             }
-            
+
             if (username.length < 3) {
                 showMessage('Username must be at least 3 characters', 'error');
                 return;
             }
-            
+
+            // Email validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                showMessage('Please enter a valid email address', 'error');
+                return;
+            }
+
             try {
                 // Check if username exists
                 const usernameCheck = await usersCollection.where("username", "==", username).get();
@@ -2190,42 +2284,51 @@
                     showMessage('Username already taken. Please choose another.', 'error');
                     return;
                 }
-                
+
+                // Check if email exists
+                const emailCheck = await usersCollection.where("email", "==", email).get();
+                if (!emailCheck.empty) {
+                    showMessage('Email already registered. Please use a different email.', 'error');
+                    return;
+                }
+
                 // Create user object
                 const userId = generateUserId();
                 const userData = {
                     userId: userId,
                     name: name,
                     username: username,
+                    email: email,
+                    phone: phone || '',
                     passwordHash: hashPassword(username, password),
-                    email: email || '',
                     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                     role: 'user'
                 };
-                
+
                 // Save to Firebase
                 await usersCollection.add(userData);
-                
+
                 // Create session
                 const sessionData = {
                     userId: userId,
                     name: name,
                     username: username,
                     email: email,
+                    phone: phone || '',
                     loginTime: new Date().toISOString()
                 };
-                
+
                 // Save to localStorage
                 localStorage.setItem('back2you_user', JSON.stringify(sessionData));
-                
+
                 // Show success
                 showMessage('Account created successfully! Loading app...', 'success');
-                
+
                 // Switch to app page after 1.5 seconds
                 setTimeout(() => {
                     switchToApp(sessionData);
                 }, 1500);
-                
+
             } catch (error) {
                 console.error('Registration error:', error);
                 showMessage('Registration failed. Please try again.', 'error');
@@ -2234,49 +2337,50 @@
 
         async function handleLogin(event) {
             event.preventDefault();
-            
+
             const username = document.getElementById('loginUsername').value.trim().toLowerCase();
             const password = document.getElementById('loginPassword').value;
-            
+
             try {
                 // Find user by username
                 const userSnapshot = await usersCollection.where("username", "==", username).get();
-                
+
                 if (userSnapshot.empty) {
                     showMessage('Username not found.', 'error');
                     return;
                 }
-                
+
                 const userDoc = userSnapshot.docs[0];
                 const userData = userDoc.data();
-                
+
                 // Verify password
                 const hashedPassword = hashPassword(username, password);
                 if (userData.passwordHash !== hashedPassword) {
                     showMessage('Incorrect password.', 'error');
                     return;
                 }
-                
+
                 // Create session
                 const sessionData = {
                     userId: userData.userId,
                     name: userData.name,
                     username: userData.username,
                     email: userData.email,
+                    phone: userData.phone || '',
                     loginTime: new Date().toISOString()
                 };
-                
+
                 // Save to localStorage
                 localStorage.setItem('back2you_user', JSON.stringify(sessionData));
-                
+
                 // Show success
                 showMessage(`Welcome back, ${userData.name}! Loading app...`, 'success');
-                
+
                 // Switch to app page after 1.5 seconds
                 setTimeout(() => {
                     switchToApp(sessionData);
                 }, 1500);
-                
+
             } catch (error) {
                 console.error('Login error:', error);
                 showMessage('Login failed. Please try again.', 'error');
@@ -2287,7 +2391,7 @@
             // Hide login page, show app page
             document.getElementById('loginPage').style.display = 'none';
             document.getElementById('appPage').style.display = 'block';
-            
+
             // Initialize app with user data
             initApp(userData);
         }
@@ -2335,45 +2439,105 @@
         function initApp(userData) {
             currentUser = userData;
             updateUserUI();
-            
+
             // Set default dates
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('lDate').value = today;
             document.getElementById('fDate').value = today;
-            
+
             // Check for saved dark mode preference
             if (localStorage.getItem('darkMode') === 'true') {
                 document.body.classList.add('dark-mode');
                 updateDarkModeIcon();
             }
-            
+
             // Set up form navigation
             setupFormNavigation();
-            
+
             // Initialize empty states
             initializeEmptyStates();
-            
+
             // Load items
             loadItems();
+
+            // Initialize sticky header functionality
+            initStickyHeader();
+        }
+
+        // ===== STICKY HEADER FUNCTIONALITY =====
+        function initStickyHeader() {
+            const header = document.getElementById('mainHeader');
+            let lastScrollTop = 0;
+            
+            window.addEventListener('scroll', function() {
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                
+                if (scrollTop > 100) {
+                    header.classList.add('small-header');
+                } else {
+                    header.classList.remove('small-header');
+                }
+                
+                lastScrollTop = scrollTop;
+            });
         }
 
         function updateUserUI() {
             if (currentUser) {
                 document.getElementById('userWelcome').textContent = `Welcome, ${currentUser.name}`;
-                
-                // Auto-fill forms
+
+                // Auto-fill forms with user data
                 if (!document.getElementById('lName').value) {
                     document.getElementById('lName').value = currentUser.name;
                 }
-                if (!document.getElementById('lContact').value) {
-                    document.getElementById('lContact').value = currentUser.email || '';
+                if (!document.getElementById('lEmail').value) {
+                    document.getElementById('lEmail').value = currentUser.email || '';
+                }
+                if (!document.getElementById('lPhone').value) {
+                    document.getElementById('lPhone').value = currentUser.phone || '';
                 }
                 if (!document.getElementById('fName').value) {
                     document.getElementById('fName').value = currentUser.name;
                 }
-                if (!document.getElementById('fContact').value) {
-                    document.getElementById('fContact').value = currentUser.email || '';
+                if (!document.getElementById('fEmail').value) {
+                    document.getElementById('fEmail').value = currentUser.email || '';
                 }
+                if (!document.getElementById('fPhone').value) {
+                    document.getElementById('fPhone').value = currentUser.phone || '';
+                }
+            }
+        }
+
+        // ===== EMAIL NOTIFICATION FUNCTIONS =====
+        async function sendNotificationEmail(toEmail, toName, itemDetails, claimerDetails, type) {
+            try {
+                // Prepare email template parameters
+                const templateParams = {
+                    to_email: toEmail,
+                    to_name: toName,
+                    from_name: claimerDetails.name,
+                    from_email: claimerDetails.email,
+                    from_phone: claimerDetails.phone || 'Not provided',
+                    item_name: itemDetails.item,
+                    item_type: type === 'lost' ? 'Lost Item' : 'Found Item',
+                    item_description: itemDetails.description || 'No description provided',
+                    item_location: itemDetails.location || 'Location not specified',
+                    item_date: itemDetails.date || new Date().toLocaleDateString(),
+                    message: `${claimerDetails.name} believes they have found your lost item. Please contact them to arrange the return.`
+                };
+
+                // Send email using EmailJS
+                const response = await emailjs.send(
+                    EMAILJS_SERVICE_ID,
+                    EMAILJS_TEMPLATE_ID,
+                    templateParams
+                );
+
+                console.log('Email sent successfully:', response);
+                return true;
+            } catch (error) {
+                console.error('Failed to send email:', error);
+                return false;
             }
         }
 
@@ -2388,17 +2552,17 @@
         function showToast(message, type = 'info', duration = 5000) {
             const container = document.getElementById('toastContainer');
             const toastId = 'toast-' + Date.now();
-            
+
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
             toast.id = toastId;
-            
+
             const icons = {
                 success: 'fa-check-circle',
                 error: 'fa-exclamation-circle',
                 info: 'fa-info-circle'
             };
-            
+
             toast.innerHTML = `
                 <i class="fas ${icons[type]} toast-icon"></i>
                 <div class="toast-message">
@@ -2407,9 +2571,9 @@
                 </div>
                 <button class="toast-close" onclick="removeToast('${toastId}')">&times;</button>
             `;
-            
+
             container.appendChild(toast);
-            
+
             setTimeout(() => removeToast(toastId), duration);
         }
 
@@ -2458,10 +2622,10 @@
                 tab.classList.remove('active');
             });
             document.querySelectorAll('.nav-tab')[formType === 'lost' ? 0 : 1].classList.add('active');
-            
+
             document.getElementById('lostFormSection').classList.toggle('active', formType === 'lost');
             document.getElementById('foundFormSection').classList.toggle('active', formType === 'found');
-            
+
             if (formType === 'found') {
                 goToStep(1);
             }
@@ -2477,11 +2641,11 @@
                 }
             });
             document.querySelectorAll('.form-step')[step - 1].classList.add('active');
-            
+
             document.querySelectorAll('.form-page').forEach((page, index) => {
                 page.classList.toggle('active', index + 1 === step);
             });
-            
+
             foundFormStep = step;
         }
 
@@ -2490,18 +2654,18 @@
             const files = Array.from(event.target.files);
             const previewContainer = document.getElementById('lostImagePreview');
             previewContainer.innerHTML = '';
-            
+
             files.forEach((file, index) => {
                 if (file.size > 5 * 1024 * 1024) {
                     showToast(`File ${file.name} is too large (max 5MB)`, 'error');
                     return;
                 }
-                
+
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const imgSrc = e.target.result;
                     lostImages.push(imgSrc);
-                    
+
                     const preview = document.createElement('div');
                     preview.className = 'image-preview';
                     preview.innerHTML = `
@@ -2520,18 +2684,18 @@
             const files = Array.from(event.target.files);
             const previewContainer = document.getElementById('foundImagePreview');
             previewContainer.innerHTML = '';
-            
+
             files.forEach((file, index) => {
                 if (file.size > 5 * 1024 * 1024) {
                     showToast(`File ${file.name} is too large (max 5MB)`, 'error');
                     return;
                 }
-                
+
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const imgSrc = e.target.result;
                     foundImages.push(imgSrc);
-                    
+
                     const preview = document.createElement('div');
                     preview.className = 'image-preview';
                     preview.innerHTML = `
@@ -2559,9 +2723,9 @@
         function updateImagePreview(type) {
             const previewContainer = document.getElementById(`${type}ImagePreview`);
             const images = type === 'lost' ? lostImages : foundImages;
-            
+
             previewContainer.innerHTML = '';
-            
+
             images.forEach((imgSrc, index) => {
                 const preview = document.createElement('div');
                 preview.className = 'image-preview';
@@ -2580,14 +2744,14 @@
             const section = document.getElementById(sectionId);
             const header = section.previousElementSibling;
             const icon = header.querySelector('.toggle-icon');
-            
+
             section.classList.toggle('active');
             header.classList.toggle('active');
-            
+
             if (section.classList.contains('active')) {
                 icon.classList.remove('fa-chevron-down');
                 icon.classList.add('fa-chevron-up');
-                
+
                 if (sectionId === 'lostContainer' && allItems.lost.length === 0) {
                     loadItems();
                 } else if (sectionId === 'foundContainer' && allItems.found.length === 0) {
@@ -2604,23 +2768,23 @@
             try {
                 document.getElementById('lostList').innerHTML = '<div class="spinner-container"><div class="spinner"></div></div>';
                 document.getElementById('foundList').innerHTML = '<div class="spinner-container"><div class="spinner"></div></div>';
-                
+
                 const lostSnapshot = await db.collection('lostItems').orderBy('timestamp', 'desc').get();
                 allItems.lost = lostSnapshot.docs.map(doc => ({
                     id: doc.id,
                     ...doc.data()
                 }));
-                
+
                 const foundSnapshot = await db.collection('foundItems').orderBy('timestamp', 'desc').get();
                 allItems.found = foundSnapshot.docs.map(doc => ({
                     id: doc.id,
                     ...doc.data()
                 }));
-                
+
                 renderLists();
                 updateStats();
                 checkForMatches();
-                
+
             } catch (error) {
                 console.error('Error loading items:', error);
                 showToast('Failed to load items. Please refresh the page.', 'error');
@@ -2636,7 +2800,7 @@
         function renderList(type) {
             const container = document.getElementById(`${type}List`);
             const items = allItems[type];
-            
+
             if (items.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
@@ -2647,7 +2811,7 @@
                 `;
                 return;
             }
-            
+
             container.innerHTML = items.map(item => createItemCard(item, type)).join('');
         }
 
@@ -2661,7 +2825,7 @@
                 month: 'short',
                 day: 'numeric'
             });
-            
+
             const categoryLabels = {
                 electronics: '📱 Electronics',
                 documents: '📄 Documents/ID Cards',
@@ -2672,11 +2836,11 @@
                 books: '📚 Books/Notebooks',
                 other: '📦 Other'
             };
-            
-            // UPDATED: Different button text for lost vs found items
-            const claimButtonText = isLost ? 'I think I found this' : 'I think this is mine';
-            const claimButtonIcon = isLost ? 'fa-hand-holding' : 'fa-flag';
-            
+
+            // Determine contact information to display
+            const contactEmail = item.email || item.userEmail || 'No email provided';
+            const contactPhone = item.phone || 'No phone provided';
+
             return `
                 <div class="item-card ${type} ${item.matched ? 'matched' : ''}" data-id="${item.id}">
                     <div class="item-header">
@@ -2691,6 +2855,7 @@
                         </div>
                         <div>
                             <span class="item-badge badge-${type}">${isLost ? 'LOST' : 'FOUND'}</span>
+                            ${item.matched ? '<span class="item-badge badge-matched" style="margin-left: 8px;">MATCHED</span>' : ''}
                         </div>
                     </div>
                     
@@ -2717,7 +2882,8 @@
                     
                     <div class="item-meta">
                         <span><i class="fas fa-user"></i> ${escapeHtml(item.name)}</span>
-                        <span><i class="fas fa-phone"></i> ${escapeHtml(item.contact)}</span>
+                        <span><i class="fas fa-envelope"></i> ${escapeHtml(contactEmail)}</span>
+                        ${contactPhone !== 'No phone provided' ? `<span><i class="fas fa-phone"></i> ${escapeHtml(contactPhone)}</span>` : ''}
                     </div>
                     
                     <div class="item-actions">
@@ -2738,7 +2904,7 @@
                             </button>
                         ` : `
                             <button class="btn btn-outline" onclick="claimItem('${type}', '${item.id}')">
-                                <i class="fas ${claimButtonIcon}"></i> ${claimButtonText}
+                                <i class="fas fa-${isLost ? 'hand-holding' : 'flag'}"></i> ${isLost ? 'I think I found this' : 'I think this is mine'}
                             </button>
                         `}
                     </div>
@@ -2768,17 +2934,18 @@
         // ===== FORM SUBMISSION =====
         async function handleLostFormSubmit(event) {
             event.preventDefault();
-            
+
             const form = event.target;
             const submitBtn = form.querySelector('button[type="submit"]');
             const originalText = submitBtn.innerHTML;
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
             submitBtn.disabled = true;
-            
+
             try {
                 const formData = {
                     name: escapeHtml(document.getElementById('lName').value.trim()),
-                    contact: escapeHtml(document.getElementById('lContact').value.trim()),
+                    email: escapeHtml(document.getElementById('lEmail').value.trim().toLowerCase()),
+                    phone: escapeHtml(document.getElementById('lPhone').value.trim()),
                     item: escapeHtml(document.getElementById('lItem').value.trim()),
                     category: document.getElementById('lCategory').value,
                     date: document.getElementById('lDate').value,
@@ -2791,30 +2958,30 @@
                     userUsername: currentUser.username,
                     userEmail: currentUser.email || ''
                 };
-                
+
                 if (lostImages.length > 0) {
                     formData.imageUrl = lostImages[0];
                     if (lostImages.length > 1) {
                         formData.additionalImages = lostImages.slice(1);
                     }
                 }
-                
+
                 const docRef = await db.collection('lostItems').add(formData);
                 allItems.lost.unshift({ id: docRef.id, ...formData });
-                
+
                 form.reset();
                 document.getElementById('lDate').valueAsDate = new Date();
                 lostImages = [];
                 document.getElementById('lostImagePreview').innerHTML = '';
-                
+
                 renderLists();
                 updateStats();
                 showToast('Lost item reported successfully!', 'success');
-                
+
                 if (!document.getElementById('lostContainer').classList.contains('active')) {
                     toggleSection('lostContainer');
                 }
-                
+
             } catch (error) {
                 console.error('Error:', error);
                 showToast('Failed to submit. Please try again.', 'error');
@@ -2826,17 +2993,18 @@
 
         async function handleFoundFormSubmit(event) {
             event.preventDefault();
-            
+
             const form = event.target;
             const submitBtn = form.querySelector('button[type="submit"]');
             const originalText = submitBtn.innerHTML;
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
             submitBtn.disabled = true;
-            
+
             try {
                 const formData = {
                     name: escapeHtml(document.getElementById('fName').value.trim()),
-                    contact: escapeHtml(document.getElementById('fContact').value.trim()),
+                    email: escapeHtml(document.getElementById('fEmail').value.trim().toLowerCase()),
+                    phone: escapeHtml(document.getElementById('fPhone').value.trim()),
                     organization: escapeHtml(document.getElementById('fOrganization').value.trim()),
                     item: escapeHtml(document.getElementById('fItem').value.trim()),
                     category: document.getElementById('fCategory').value,
@@ -2858,31 +3026,31 @@
                     userUsername: currentUser.username,
                     userEmail: currentUser.email || ''
                 };
-                
+
                 if (foundImages.length > 0) {
                     formData.imageUrl = foundImages[0];
                     if (foundImages.length > 1) {
                         formData.additionalImages = foundImages.slice(1);
                     }
                 }
-                
+
                 const docRef = await db.collection('foundItems').add(formData);
                 allItems.found.unshift({ id: docRef.id, ...formData });
-                
+
                 form.reset();
                 document.getElementById('fDate').valueAsDate = new Date();
                 foundImages = [];
                 document.getElementById('foundImagePreview').innerHTML = '';
                 goToStep(1);
-                
+
                 renderLists();
                 updateStats();
                 showToast('Found item reported successfully!', 'success');
-                
+
                 if (!document.getElementById('foundContainer').classList.contains('active')) {
                     toggleSection('foundContainer');
                 }
-                
+
             } catch (error) {
                 console.error('Error:', error);
                 showToast('Failed to submit. Please try again.', 'error');
@@ -2898,23 +3066,23 @@
                 showToast('Please login to delete items.', 'error');
                 return;
             }
-            
+
             try {
                 const dbCollection = type === 'lost' ? 'lostItems' : 'foundItems';
                 const itemRef = db.collection(dbCollection).doc(id);
                 const itemDoc = await itemRef.get();
-                
+
                 if (itemDoc.exists) {
                     const itemData = itemDoc.data();
-                    
+
                     if (itemData.userId === currentUser.userId) {
                         if (confirm('Are you sure you want to delete your item?')) {
                             await itemRef.delete();
-                            
+
                             const collection = type === 'lost' ? allItems.lost : allItems.found;
                             const index = collection.findIndex(item => item.id === id);
                             if (index !== -1) collection.splice(index, 1);
-                            
+
                             showToast('Your item has been deleted.', 'success');
                             renderLists();
                             updateStats();
@@ -2934,58 +3102,60 @@
                 showToast('Please login to edit items.', 'error');
                 return;
             }
-            
+
             const items = type === 'lost' ? allItems.lost : allItems.found;
             const item = items.find(i => i.id === id);
-            
+
             if (!item) return;
-            
+
             if (item.userId !== currentUser.userId) {
                 showToast('You can only edit your own items.', 'error');
                 return;
             }
-            
+
             currentEditId = id;
             currentEditType = type;
-            
+
             document.getElementById('editItem').value = item.item;
             document.getElementById('editCategory').value = item.category || 'other';
             document.getElementById('editDate').value = item.date || 
                 (item.timestamp?.toDate().toISOString().split('T')[0]);
             document.getElementById('editLocation').value = item.location || '';
+            document.getElementById('editEmail').value = item.email || item.userEmail || '';
+            document.getElementById('editPhone').value = item.phone || '';
             document.getElementById('editDesc').value = item.description || '';
-            document.getElementById('editContact').value = item.contact;
-            
+
             document.getElementById('editModal').style.display = 'flex';
         }
 
         async function handleEditSubmit(event) {
             event.preventDefault();
-            
+
             try {
                 const updatedData = {
                     item: escapeHtml(document.getElementById('editItem').value.trim()),
                     category: document.getElementById('editCategory').value,
                     date: document.getElementById('editDate').value,
                     location: escapeHtml(document.getElementById('editLocation').value.trim()),
+                    email: escapeHtml(document.getElementById('editEmail').value.trim()),
+                    phone: escapeHtml(document.getElementById('editPhone').value.trim()),
                     description: escapeHtml(document.getElementById('editDesc').value.trim()),
-                    contact: escapeHtml(document.getElementById('editContact').value.trim()),
                     lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
                 };
-                
+
                 const dbCollection = currentEditType === 'lost' ? 'lostItems' : 'foundItems';
                 const itemRef = db.collection(dbCollection).doc(currentEditId);
                 const itemDoc = await itemRef.get();
-                
+
                 if (itemDoc.exists && itemDoc.data().userId === currentUser.userId) {
                     await itemRef.update(updatedData);
-                    
+
                     const collection = currentEditType === 'lost' ? allItems.lost : allItems.found;
                     const index = collection.findIndex(item => item.id === currentEditId);
                     if (index !== -1) {
                         collection[index] = { ...collection[index], ...updatedData };
                     }
-                    
+
                     closeModal();
                     renderLists();
                     showToast('Item updated!', 'success');
@@ -3006,11 +3176,11 @@
                         matched: true,
                         matchedAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
-                
+
                 const collection = type === 'lost' ? allItems.lost : allItems.found;
                 const item = collection.find(i => i.id === id);
                 if (item) item.matched = true;
-                
+
                 showToast('Item marked as matched!', 'success');
                 renderLists();
                 updateStats();
@@ -3029,25 +3199,25 @@
         function filterItems(type, category = null) {
             const searchInput = document.getElementById(`search${type.charAt(0).toUpperCase() + type.slice(1)}`);
             const searchTerm = searchInput.value.toLowerCase();
-            
+
             if (category && event) {
                 document.querySelectorAll(`#${type}Container .filter-btn`).forEach(btn => {
                     btn.classList.remove('active');
                 });
                 event.target.classList.add('active');
             }
-            
+
             const items = (type === 'lost' ? allItems.lost : allItems.found).filter(item => {
                 if (category === 'matched') {
                     return item.matched === true;
                 }
-                
+
                 if (category && category !== 'all' && item.category !== category) {
                     return false;
                 }
-                
+
                 if (!searchTerm) return true;
-                
+
                 const searchFields = [
                     item.item,
                     item.category,
@@ -3058,10 +3228,10 @@
                     item.brand,
                     item.model
                 ].filter(Boolean).map(f => f.toLowerCase());
-                
+
                 return searchFields.some(field => field.includes(searchTerm));
             });
-            
+
             const container = document.getElementById(`${type}List`);
             if (items.length === 0) {
                 container.innerHTML = `
@@ -3076,13 +3246,167 @@
             }
         }
 
+        // ===== MATCHED ITEMS FUNCTIONALITY =====
+        function showMatchedItems() {
+            // First, open both sections if they're closed
+            const lostContainer = document.getElementById('lostContainer');
+            const foundContainer = document.getElementById('foundContainer');
+            
+            if (!lostContainer.classList.contains('active')) {
+                toggleSection('lostContainer');
+            }
+            if (!foundContainer.classList.contains('active')) {
+                toggleSection('foundContainer');
+            }
+            
+            // Clear search boxes
+            document.getElementById('searchLost').value = '';
+            document.getElementById('searchFound').value = '';
+            
+            // Filter to show only matched items
+            filterMatchedItems();
+            
+            // Scroll to the matched section
+            setTimeout(() => {
+                scrollToSection('lostContainer');
+            }, 300);
+            
+            showToast('Showing all matched items', 'info');
+        }
+
+        function filterMatchedItems() {
+            // Update filter buttons to show matched is active
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            document.querySelectorAll('.matched-filter').forEach(btn => {
+                btn.classList.add('active');
+            });
+            
+            // Filter and display matched items
+            const matchedLostItems = allItems.lost.filter(item => item.matched === true);
+            const matchedFoundItems = allItems.found.filter(item => item.matched === true);
+            
+            // Render matched items
+            renderFilteredItems('lost', matchedLostItems);
+            renderFilteredItems('found', matchedFoundItems);
+            
+            // Show message if no matches
+            if (matchedLostItems.length === 0 && matchedFoundItems.length === 0) {
+                showToast('No matched items found. Mark items as matched using the handshake button.', 'info');
+            }
+        }
+
+        function renderFilteredItems(type, items) {
+            const container = document.getElementById(`${type}List`);
+            
+            if (items.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-handshake"></i>
+                        <h3>No matched ${type} items</h3>
+                        <p>No ${type} items have been marked as matched yet.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = items.map(item => createItemCard(item, type)).join('');
+        }
+
+        // ===== CLAIM ITEM WITH EMAIL NOTIFICATION =====
+        async function claimItem(type, id) {
+            const items = type === 'lost' ? allItems.lost : allItems.found;
+            const item = items.find(i => i.id === id);
+
+            if (!item) {
+                showToast('Item not found.', 'error');
+                return;
+            }
+
+            if (!currentUser) {
+                showToast('Please login to claim items.', 'error');
+                return;
+            }
+
+            // Check if user is claiming their own item
+            if (item.userId === currentUser.userId) {
+                showToast('This is your own item!', 'info');
+                return;
+            }
+
+            // Prepare claimer details
+            const claimerDetails = {
+                name: currentUser.name,
+                email: currentUser.email,
+                phone: currentUser.phone || 'Not provided'
+            };
+
+            // Determine recipient email
+            const recipientEmail = item.email || item.userEmail;
+            const recipientName = item.name || item.userName || 'User';
+
+            if (!recipientEmail) {
+                showToast('Cannot send notification: Recipient email not available.', 'error');
+                return;
+            }
+
+            // Show confirmation dialog
+            const confirmation = confirm(`Do you want to notify ${recipientName} about this potential match? An email will be sent to them.`);
+            
+            if (!confirmation) {
+                showToast('Notification cancelled.', 'info');
+                return;
+            }
+
+            // Show loading toast
+            const loadingToast = showToast('Sending notification email...', 'info', 30000);
+
+            try {
+                // Send email notification
+                const emailSent = await sendNotificationEmail(
+                    recipientEmail,
+                    recipientName,
+                    item,
+                    claimerDetails,
+                    type
+                );
+
+                if (emailSent) {
+                    showToast(`Notification sent to ${recipientName}! They will contact you soon.`, 'success');
+                    
+                    // Also show contact information to the user
+                    const contactInfo = `
+                        <strong>Contact Information:</strong><br>
+                        ${recipientName}<br>
+                        Email: ${recipientEmail}<br>
+                        ${item.phone ? `Phone: ${item.phone}` : ''}
+                    `;
+                    
+                    // Create a more detailed message
+                    const message = type === 'lost' 
+                        ? `You think you found "${item.item}". The owner has been notified and will contact you.`
+                        : `You think "${item.item}" is yours. The finder has been notified and will contact you.`;
+                    
+                    showToast(message, 'info', 10000);
+                } else {
+                    showToast('Failed to send email. Please contact them directly.', 'error');
+                }
+
+            } catch (error) {
+                console.error('Error sending notification:', error);
+                showToast('Failed to send notification. Please try again later.', 'error');
+            }
+        }
+
         // ===== MATCH ALGORITHM =====
         function checkForMatches() {
             const lostItems = allItems.lost.filter(item => !item.matched);
             const foundItems = allItems.found.filter(item => !item.matched);
-            
+
             let matchesFound = 0;
-            
+
             foundItems.forEach(foundItem => {
                 const potentialMatches = lostItems.filter(lostItem => {
                     const itemSimilarity = compareStrings(foundItem.item, lostItem.item);
@@ -3092,11 +3416,11 @@
                                      compareStrings(foundItem.color, lostItem.color);
                     const brandMatch = foundItem.brand && lostItem.brand && 
                                      compareStrings(foundItem.brand, lostItem.brand);
-                    
+
                     return (itemSimilarity > 0.7 || (categoryMatch && (colorMatch || brandMatch))) && 
                            (locationSimilarity > 0.5 || foundItem.location === lostItem.location);
                 });
-                
+
                 if (potentialMatches.length > 0 && matchesFound === 0) {
                     showToast(`Found ${potentialMatches.length} potential match(es) for "${foundItem.item}"`, 'info');
                     matchesFound++;
@@ -3108,12 +3432,12 @@
             if (!str1 || !str2) return 0;
             const s1 = str1.toLowerCase();
             const s2 = str2.toLowerCase();
-            
+
             if (s1.includes(s2) || s2.includes(s1)) return 1;
-            
+
             const longer = s1.length > s2.length ? s1 : s2;
             const shorter = s1.length > s2.length ? s2 : s1;
-            
+
             if (longer.length === 0) return 1;
             return (longer.length - longer.split('').filter((c, i) => c !== shorter[i]).length) / longer.length;
         }
@@ -3123,7 +3447,7 @@
             stats.lost = allItems.lost.length;
             stats.found = allItems.found.length;
             stats.matched = [...allItems.lost, ...allItems.found].filter(item => item.matched).length;
-            
+
             document.getElementById('lostCount').textContent = stats.lost;
             document.getElementById('foundCount').textContent = stats.found;
             document.getElementById('matchedCount').textContent = stats.matched;
@@ -3182,44 +3506,6 @@
                     toggleSection(sectionId);
                 }
                 header.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        }
-
-        function showMatchedItems() {
-            const lostContainer = document.getElementById('lostContainer');
-            const foundContainer = document.getElementById('foundContainer');
-            
-            if (!lostContainer.classList.contains('active')) {
-                toggleSection('lostContainer');
-            }
-            if (!foundContainer.classList.contains('active')) {
-                toggleSection('foundContainer');
-            }
-            
-            filterItems('lost', 'matched');
-            filterItems('found', 'matched');
-            
-            scrollToSection('lostContainer');
-            
-            showToast('Showing matched items only', 'info');
-        }
-        
-        // Claim item function
-        function claimItem(type, id) {
-            const items = type === 'lost' ? allItems.lost : allItems.found;
-            const item = items.find(i => i.id === id);
-            
-            if (item) {
-                const contactInfo = item.contact || item.userEmail || 'No contact provided';
-                const message = type === 'lost' 
-                    ? `You think you found this lost item.<br>Contact owner: ${contactInfo}<br>Reported by: ${item.userName || 'Unknown'}`
-                    : `You think this found item is yours.<br>Contact finder: ${contactInfo}<br>Reported by: ${item.userName || 'Unknown'}`;
-                    
-                showToast(
-                    message,
-                    'info',
-                    10000
-                );
             }
         }
     </script>
