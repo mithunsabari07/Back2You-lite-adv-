@@ -1116,6 +1116,51 @@
             border-color: var(--primary-color);
         }
 
+        /* Enhanced Search Suggestions */
+        .search-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .search-suggestion-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: var(--transition);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .search-suggestion-item:hover {
+            background: var(--light-bg);
+        }
+
+        .search-suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .highlight {
+            background-color: #ffeb3b;
+            color: #000;
+            padding: 2px 0;
+        }
+
+        .search-suggestion-item .item-icon {
+            font-size: 0.9rem;
+            color: var(--primary-color);
+        }
+
         /* Modal */
         .modal {
             display: none;
@@ -1436,6 +1481,10 @@
                 flex-direction: row;
                 gap: 8px;
             }
+
+            .search-suggestions {
+                max-height: 200px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -1598,7 +1647,7 @@
                     <p>Found Items</p>
                 </div>
             </div>
-            <div class="stat-card" onclick="showMatchedItems()">
+            <div class="stat-card" onclick="scrollToSection('matchedContainer')">
                 <div class="stat-icon matched">
                     <i class="fas fa-handshake"></i>
                 </div>
@@ -2027,6 +2076,7 @@
                     <input class="search-input" id="searchLost" type="text" 
                            placeholder="Search lost items by name, category, location..." 
                            oninput="debounceFilter('lost')">
+                    <div id="lostSearchSuggestions" class="search-suggestions"></div>
                 </div>
                 <div class="filter-buttons">
                     <button class="filter-btn active" onclick="filterItems('lost', 'all')">All</button>
@@ -2062,6 +2112,7 @@
                     <input class="search-input" id="searchFound" type="text" 
                            placeholder="Search found items by name, category, location..." 
                            oninput="debounceFilter('found')">
+                    <div id="foundSearchSuggestions" class="search-suggestions"></div>
                 </div>
                 <div class="filter-buttons">
                     <button class="filter-btn active" onclick="filterItems('found', 'all')">All</button>
@@ -2078,6 +2129,42 @@
                 <div id="foundList" class="items-list">
                     <div class="spinner-container">
                         <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW: Successfully Matched Items Section -->
+        <div class="container toggle-section">
+            <div class="toggle-header" onclick="toggleSection('matchedContainer')">
+                <div>
+                    <h3><i class="fas fa-handshake"></i> Successfully Matched Items</h3>
+                    <p>Items that have been successfully matched between owners and finders</p>
+                </div>
+                <i class="fas fa-chevron-down toggle-icon"></i>
+            </div>
+            <div id="matchedContainer" class="toggle-content">
+                <div class="search-container">
+                    <i class="fas fa-search search-icon"></i>
+                    <input class="search-input" id="searchMatched" type="text" 
+                           placeholder="Search matched items by name, category, location..." 
+                           oninput="debounceFilter('matched')">
+                    <div id="matchedSearchSuggestions" class="search-suggestions"></div>
+                </div>
+                <div class="filter-buttons">
+                    <button class="filter-btn active" onclick="filterItems('matched', 'all')">All</button>
+                    <button class="filter-btn" onclick="filterItems('matched', 'electronics')">Electronics</button>
+                    <button class="filter-btn" onclick="filterItems('matched', 'documents')">Documents</button>
+                    <button class="filter-btn" onclick="filterItems('matched', 'stationery')">Stationery</button>
+                    <button class="filter-btn" onclick="filterItems('matched', 'keys')">Keys</button>
+                    <button class="filter-btn" onclick="filterItems('matched', 'books')">Books</button>
+                    <button class="filter-btn" onclick="filterItems('matched', 'other')">Other</button>
+                </div>
+                <div id="matchedList" class="items-list">
+                    <div class="empty-state">
+                        <i class="fas fa-handshake"></i>
+                        <h3>No matched items yet</h3>
+                        <p>When someone claims an item, it will appear here</p>
                     </div>
                 </div>
             </div>
@@ -2179,12 +2266,16 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 
     <script>
-        // Firebase Configuration
+        // Firebase Configuration - UPDATED WITH YOUR CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyDKy_RM1zrJS2Ux-mrf-ZSAFG3QJGSvm_c",
             authDomain: "back2you-lite-e6695.firebaseapp.com",
+            databaseURL: "https://back2you-lite-e6695-default-rtdb.firebaseio.com",
             projectId: "back2you-lite-e6695",
-            storageBucket: "back2you-lite-e6695.appspot.com"
+            storageBucket: "back2you-lite-e6695.firebasestorage.app",
+            messagingSenderId: "972873481520",
+            appId: "1:972873481520:web:5004e6ca6ee0dde6511cf5",
+            measurementId: "G-MJBDH1EP4N"
         };
 
         // Initialize Firebase
@@ -2426,7 +2517,7 @@
 
         // ===== APP STATE =====
         let currentUser = null;
-        let allItems = { lost: [], found: [] };
+        let allItems = { lost: [], found: [], matched: [] };
         let currentEditId = null;
         let currentEditType = null;
         let debounceTimer;
@@ -2462,6 +2553,104 @@
 
             // Initialize sticky header functionality
             initStickyHeader();
+
+            // Initialize search suggestions
+            initSearchSuggestions();
+        }
+
+        // ===== ENHANCED SEARCH FUNCTIONS =====
+        function initSearchSuggestions() {
+            // Add event listeners for search inputs
+            document.getElementById('searchLost').addEventListener('focus', function() {
+                showSearchSuggestions('lost', this.value);
+            });
+            document.getElementById('searchFound').addEventListener('focus', function() {
+                showSearchSuggestions('found', this.value);
+            });
+            document.getElementById('searchMatched').addEventListener('focus', function() {
+                showSearchSuggestions('matched', this.value);
+            });
+
+            // Close suggestions when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!event.target.closest('.search-container')) {
+                    hideAllSearchSuggestions();
+                }
+            });
+        }
+
+        function showSearchSuggestions(type, searchTerm) {
+            const suggestionsContainer = document.getElementById(`${type}SearchSuggestions`);
+            const items = type === 'lost' ? allItems.lost : 
+                         type === 'found' ? allItems.found : 
+                         allItems.matched;
+
+            if (!searchTerm) {
+                hideAllSearchSuggestions();
+                return;
+            }
+
+            const searchLower = searchTerm.toLowerCase();
+            const suggestions = items.filter(item => {
+                return item.item.toLowerCase().includes(searchLower) ||
+                       (item.category && item.category.toLowerCase().includes(searchLower)) ||
+                       (item.location && item.location.toLowerCase().includes(searchLower));
+            }).slice(0, 10); // Limit to 10 suggestions
+
+            if (suggestions.length === 0) {
+                suggestionsContainer.style.display = 'none';
+                return;
+            }
+
+            suggestionsContainer.innerHTML = suggestions.map(item => {
+                const highlightedText = highlightText(item.item, searchTerm);
+                return `
+                    <div class="search-suggestion-item" onclick="selectSuggestion('${type}', '${item.id}')">
+                        <i class="fas fa-${type === 'lost' ? 'exclamation-triangle' : type === 'found' ? 'check-circle' : 'handshake'} item-icon"></i>
+                        <span>${highlightedText}</span>
+                        <small style="margin-left: auto; color: var(--text-light);">
+                            ${type === 'lost' ? 'Lost' : type === 'found' ? 'Found' : 'Matched'}
+                        </small>
+                    </div>
+                `;
+            }).join('');
+
+            suggestionsContainer.style.display = 'block';
+        }
+
+        function highlightText(text, searchTerm) {
+            if (!searchTerm) return escapeHtml(text);
+            
+            const regex = new RegExp(`(${searchTerm})`, 'gi');
+            return escapeHtml(text).replace(regex, '<span class="highlight">$1</span>');
+        }
+
+        function selectSuggestion(type, itemId) {
+            const items = type === 'lost' ? allItems.lost : 
+                         type === 'found' ? allItems.found : 
+                         allItems.matched;
+            
+            const item = items.find(i => i.id === itemId);
+            if (!item) return;
+
+            // Scroll to the item
+            const itemElement = document.querySelector(`[data-id="${itemId}"]`);
+            if (itemElement) {
+                itemElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                itemElement.style.animation = 'pulse 1s 3';
+                setTimeout(() => {
+                    itemElement.style.animation = '';
+                }, 3000);
+            }
+
+            hideAllSearchSuggestions();
+            document.getElementById(`search${type.charAt(0).toUpperCase() + type.slice(1)}`).value = item.item;
+        }
+
+        function hideAllSearchSuggestions() {
+            document.querySelectorAll('.search-suggestions').forEach(el => {
+                el.style.display = 'none';
+            });
         }
 
         // ===== STICKY HEADER FUNCTIONALITY =====
@@ -2756,6 +2945,8 @@
                     loadItems();
                 } else if (sectionId === 'foundContainer' && allItems.found.length === 0) {
                     loadItems();
+                } else if (sectionId === 'matchedContainer' && allItems.matched.length === 0) {
+                    loadItems();
                 }
             } else {
                 icon.classList.remove('fa-chevron-up');
@@ -2768,22 +2959,37 @@
             try {
                 document.getElementById('lostList').innerHTML = '<div class="spinner-container"><div class="spinner"></div></div>';
                 document.getElementById('foundList').innerHTML = '<div class="spinner-container"><div class="spinner"></div></div>';
+                document.getElementById('matchedList').innerHTML = '<div class="spinner-container"><div class="spinner"></div></div>';
 
-                const lostSnapshot = await db.collection('lostItems').orderBy('timestamp', 'desc').get();
+                // Load all lost items
+                const lostSnapshot = await db.collection('lostItems')
+                    .orderBy('timestamp', 'desc')
+                    .get();
                 allItems.lost = lostSnapshot.docs.map(doc => ({
                     id: doc.id,
                     ...doc.data()
                 }));
 
-                const foundSnapshot = await db.collection('foundItems').orderBy('timestamp', 'desc').get();
+                // Load all found items
+                const foundSnapshot = await db.collection('foundItems')
+                    .orderBy('timestamp', 'desc')
+                    .get();
                 allItems.found = foundSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+
+                // Load all matched items
+                const matchedSnapshot = await db.collection('matchedItems')
+                    .orderBy('matchedAt', 'desc')
+                    .get();
+                allItems.matched = matchedSnapshot.docs.map(doc => ({
                     id: doc.id,
                     ...doc.data()
                 }));
 
                 renderLists();
                 updateStats();
-                checkForMatches();
 
             } catch (error) {
                 console.error('Error loading items:', error);
@@ -2795,6 +3001,7 @@
         function renderLists() {
             renderList('lost');
             renderList('found');
+            renderList('matched');
         }
 
         function renderList(type) {
@@ -2804,9 +3011,9 @@
             if (items.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
-                        <i class="fas fa-${type === 'lost' ? 'exclamation-triangle' : 'check-circle'}"></i>
+                        <i class="fas fa-${type === 'lost' ? 'exclamation-triangle' : type === 'found' ? 'check-circle' : 'handshake'}"></i>
                         <h3>No ${type} items found</h3>
-                        <p>Be the first to report a ${type} item!</p>
+                        <p>${type === 'matched' ? 'No items have been successfully matched yet.' : 'Be the first to report a ' + type + ' item!'}</p>
                     </div>
                 `;
                 return;
@@ -2816,7 +3023,9 @@
         }
 
         function createItemCard(item, type) {
-            const isLost = type === 'lost';
+            const isLost = type === 'lost' || (type === 'matched' && item.originalType === 'lost');
+            const isFound = type === 'found' || (type === 'matched' && item.originalType === 'found');
+            const isMatched = type === 'matched';
             const isOwner = currentUser && item.userId === currentUser.userId;
             const date = new Date(item.date || item.timestamp?.toDate());
             const formattedDate = date.toLocaleDateString('en-US', {
@@ -2841,8 +3050,22 @@
             const contactEmail = item.email || item.userEmail || 'No email provided';
             const contactPhone = item.phone || 'No phone provided';
 
+            // Determine badge colors
+            let badgeClass = '';
+            let badgeText = '';
+            if (isMatched) {
+                badgeClass = 'badge-matched';
+                badgeText = 'MATCHED';
+            } else if (isLost) {
+                badgeClass = 'badge-lost';
+                badgeText = 'LOST';
+            } else if (isFound) {
+                badgeClass = 'badge-found';
+                badgeText = 'FOUND';
+            }
+
             return `
-                <div class="item-card ${type} ${item.matched ? 'matched' : ''}" data-id="${item.id}">
+                <div class="item-card ${isMatched ? 'matched' : (isLost ? 'lost' : 'found')}" data-id="${item.id}">
                     <div class="item-header">
                         <div>
                             <h3 class="item-title">${escapeHtml(item.item)}</h3>
@@ -2852,10 +3075,15 @@
                                     ${isOwner ? '<span class="owner-badge">Your Item</span>' : ''}
                                 </p>
                             ` : ''}
+                            ${isMatched ? `
+                                <p style="font-size: 0.85rem; color: ${isLost ? 'var(--warning-color)' : 'var(--success-color)'}; margin-top: 5px;">
+                                    <i class="fas fa-${isLost ? 'exclamation-triangle' : 'check-circle'}"></i>
+                                    Originally reported as ${isLost ? 'LOST' : 'FOUND'}
+                                </p>
+                            ` : ''}
                         </div>
                         <div>
-                            <span class="item-badge badge-${type}">${isLost ? 'LOST' : 'FOUND'}</span>
-                            ${item.matched ? '<span class="item-badge badge-matched" style="margin-left: 8px;">MATCHED</span>' : ''}
+                            <span class="item-badge ${badgeClass}">${badgeText}</span>
                         </div>
                     </div>
                     
@@ -2886,8 +3114,15 @@
                         ${contactPhone !== 'No phone provided' ? `<span><i class="fas fa-phone"></i> ${escapeHtml(contactPhone)}</span>` : ''}
                     </div>
                     
+                    ${isMatched && item.matchedWith ? `
+                        <div style="margin-top: 10px; padding: 10px; background: rgba(90, 103, 216, 0.1); 
+                                    border-radius: var(--border-radius-sm); color: var(--primary-color);">
+                            <i class="fas fa-handshake"></i> Successfully matched with: ${escapeHtml(item.matchedWith)}
+                        </div>
+                    ` : ''}
+                    
                     <div class="item-actions">
-                        ${isOwner ? `
+                        ${isOwner && !isMatched ? `
                             ${!item.matched ? `
                                 <button class="btn btn-outline btn-icon" onclick="markAsMatched('${type}', '${item.id}')" 
                                         title="Mark as Matched">
@@ -2902,25 +3137,26 @@
                                     title="Delete Item">
                                 <i class="fas fa-trash"></i>
                             </button>
-                        ` : `
+                        ` : !isMatched ? `
                             <button class="btn btn-outline" onclick="claimItem('${type}', '${item.id}')">
                                 <i class="fas fa-${isLost ? 'hand-holding' : 'flag'}"></i> ${isLost ? 'I think I found this' : 'I think this is mine'}
                             </button>
-                        `}
+                        ` : isOwner ? `
+                            <button class="btn btn-outline" onclick="unmatchItem('${item.id}')">
+                                <i class="fas fa-undo"></i> Return to original list
+                            </button>
+                            <button class="btn btn-outline btn-icon" onclick="deleteItem('matched', '${item.id}')" 
+                                    title="Delete Item">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        ` : ''}
                     </div>
-                    
-                    ${item.matched ? `
-                        <div style="margin-top: 10px; padding: 10px; background: rgba(56, 178, 172, 0.1); 
-                                    border-radius: var(--border-radius-sm); color: var(--secondary-color);">
-                            <i class="fas fa-check"></i> Successfully matched with owner!
-                        </div>
-                    ` : ''}
                 </div>
             `;
         }
 
         function initializeEmptyStates() {
-            ['lostList', 'foundList'].forEach(id => {
+            ['lostList', 'foundList', 'matchedList'].forEach(id => {
                 const container = document.getElementById(id);
                 container.innerHTML = `
                     <div class="empty-state">
@@ -2956,7 +3192,9 @@
                     userId: currentUser.userId,
                     userName: currentUser.name,
                     userUsername: currentUser.username,
-                    userEmail: currentUser.email || ''
+                    userEmail: currentUser.email || '',
+                    matched: false,
+                    originalType: 'lost'
                 };
 
                 if (lostImages.length > 0) {
@@ -3024,7 +3262,9 @@
                     userId: currentUser.userId,
                     userName: currentUser.name,
                     userUsername: currentUser.username,
-                    userEmail: currentUser.email || ''
+                    userEmail: currentUser.email || '',
+                    matched: false,
+                    originalType: 'found'
                 };
 
                 if (foundImages.length > 0) {
@@ -3068,7 +3308,9 @@
             }
 
             try {
-                const dbCollection = type === 'lost' ? 'lostItems' : 'foundItems';
+                const dbCollection = type === 'lost' ? 'lostItems' : 
+                                   type === 'found' ? 'foundItems' : 
+                                   'matchedItems';
                 const itemRef = db.collection(dbCollection).doc(id);
                 const itemDoc = await itemRef.get();
 
@@ -3079,7 +3321,9 @@
                         if (confirm('Are you sure you want to delete your item?')) {
                             await itemRef.delete();
 
-                            const collection = type === 'lost' ? allItems.lost : allItems.found;
+                            const collection = type === 'lost' ? allItems.lost : 
+                                            type === 'found' ? allItems.found : 
+                                            allItems.matched;
                             const index = collection.findIndex(item => item.id === id);
                             if (index !== -1) collection.splice(index, 1);
 
@@ -3190,8 +3434,159 @@
             }
         }
 
+        // ===== CLAIM ITEM FUNCTIONALITY =====
+        async function claimItem(type, id) {
+            const items = type === 'lost' ? allItems.lost : allItems.found;
+            const item = items.find(i => i.id === id);
+
+            if (!item) {
+                showToast('Item not found.', 'error');
+                return;
+            }
+
+            if (!currentUser) {
+                showToast('Please login to claim items.', 'error');
+                return;
+            }
+
+            // Check if user is claiming their own item
+            if (item.userId === currentUser.userId) {
+                showToast('This is your own item!', 'info');
+                return;
+            }
+
+            // Show confirmation dialog
+            const confirmation = confirm(`Are you sure you want to claim this item as ${type === 'lost' ? 'found' : 'yours'}? This will move it to the matched items section.`);
+            
+            if (!confirmation) {
+                showToast('Claim cancelled.', 'info');
+                return;
+            }
+
+            try {
+                // Prepare matched item data
+                const matchedItemData = {
+                    ...item,
+                    matchedWith: currentUser.name,
+                    matchedWithEmail: currentUser.email,
+                    matchedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    originalType: type,
+                    claimedBy: currentUser.userId,
+                    claimedByName: currentUser.name,
+                    claimedAt: new Date().toISOString()
+                };
+
+                // Add to matched items collection
+                const matchedRef = await db.collection('matchedItems').add(matchedItemData);
+                
+                // Remove from original collection
+                await db.collection(type === 'lost' ? 'lostItems' : 'foundItems')
+                    .doc(id)
+                    .delete();
+
+                // Update local arrays
+                const originalCollection = type === 'lost' ? allItems.lost : allItems.found;
+                const originalIndex = originalCollection.findIndex(i => i.id === id);
+                if (originalIndex !== -1) {
+                    originalCollection.splice(originalIndex, 1);
+                }
+
+                // Add to matched items
+                allItems.matched.unshift({ id: matchedRef.id, ...matchedItemData });
+
+                // Send email notification
+                const claimerDetails = {
+                    name: currentUser.name,
+                    email: currentUser.email,
+                    phone: currentUser.phone || 'Not provided'
+                };
+
+                const recipientEmail = item.email || item.userEmail;
+                const recipientName = item.name || item.userName || 'User';
+
+                if (recipientEmail) {
+                    await sendNotificationEmail(
+                        recipientEmail,
+                        recipientName,
+                        item,
+                        claimerDetails,
+                        type
+                    );
+                }
+
+                // Update UI
+                renderLists();
+                updateStats();
+                showToast('Item claimed successfully! Moved to matched items.', 'success');
+
+                // Open matched section if not open
+                if (!document.getElementById('matchedContainer').classList.contains('active')) {
+                    toggleSection('matchedContainer');
+                }
+
+            } catch (error) {
+                console.error('Error claiming item:', error);
+                showToast('Failed to claim item. Please try again.', 'error');
+            }
+        }
+
+        // ===== UNMATCH ITEM FUNCTIONALITY =====
+        async function unmatchItem(id) {
+            if (!currentUser) {
+                showToast('Please login to manage items.', 'error');
+                return;
+            }
+
+            const item = allItems.matched.find(i => i.id === id);
+            if (!item) return;
+
+            if (item.userId !== currentUser.userId) {
+                showToast('You can only return your own items to the original list.', 'error');
+                return;
+            }
+
+            const confirmation = confirm('Are you sure you want to return this item to its original list?');
+            if (!confirmation) return;
+
+            try {
+                // Remove from matched items
+                await db.collection('matchedItems').doc(id).delete();
+
+                // Add back to original collection
+                const originalCollection = item.originalType === 'lost' ? 'lostItems' : 'foundItems';
+                const { matchedWith, matchedWithEmail, matchedAt, originalType, claimedBy, claimedByName, claimedAt, ...originalItemData } = item;
+                
+                const docRef = await db.collection(originalCollection).add(originalItemData);
+
+                // Update local arrays
+                const matchedIndex = allItems.matched.findIndex(i => i.id === id);
+                if (matchedIndex !== -1) {
+                    allItems.matched.splice(matchedIndex, 1);
+                }
+
+                if (item.originalType === 'lost') {
+                    allItems.lost.unshift({ id: docRef.id, ...originalItemData });
+                } else {
+                    allItems.found.unshift({ id: docRef.id, ...originalItemData });
+                }
+
+                renderLists();
+                updateStats();
+                showToast('Item returned to original list.', 'success');
+
+            } catch (error) {
+                console.error('Error unmatching item:', error);
+                showToast('Failed to return item. Please try again.', 'error');
+            }
+        }
+
         // ===== SEARCH AND FILTER =====
         function debounceFilter(type) {
+            const searchInput = document.getElementById(`search${type.charAt(0).toUpperCase() + type.slice(1)}`);
+            const searchTerm = searchInput.value;
+            
+            showSearchSuggestions(type, searchTerm);
+            
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => filterItems(type), 300);
         }
@@ -3207,7 +3602,9 @@
                 event.target.classList.add('active');
             }
 
-            const items = (type === 'lost' ? allItems.lost : allItems.found).filter(item => {
+            const items = (type === 'lost' ? allItems.lost : 
+                          type === 'found' ? allItems.found : 
+                          allItems.matched).filter(item => {
                 if (category === 'matched') {
                     return item.matched === true;
                 }
@@ -3248,53 +3645,41 @@
 
         // ===== MATCHED ITEMS FUNCTIONALITY =====
         function showMatchedItems() {
-            // First, open both sections if they're closed
-            const lostContainer = document.getElementById('lostContainer');
-            const foundContainer = document.getElementById('foundContainer');
-            
-            if (!lostContainer.classList.contains('active')) {
-                toggleSection('lostContainer');
-            }
-            if (!foundContainer.classList.contains('active')) {
-                toggleSection('foundContainer');
+            // Open matched section
+            const matchedContainer = document.getElementById('matchedContainer');
+            if (!matchedContainer.classList.contains('active')) {
+                toggleSection('matchedContainer');
             }
             
-            // Clear search boxes
-            document.getElementById('searchLost').value = '';
-            document.getElementById('searchFound').value = '';
+            // Clear search box
+            document.getElementById('searchMatched').value = '';
             
-            // Filter to show only matched items
-            filterMatchedItems();
+            // Filter to show all matched items
+            filterItems('matched', 'all');
             
             // Scroll to the matched section
             setTimeout(() => {
-                scrollToSection('lostContainer');
+                scrollToSection('matchedContainer');
             }, 300);
             
             showToast('Showing all matched items', 'info');
         }
 
         function filterMatchedItems() {
-            // Update filter buttons to show matched is active
+            // Update filter buttons
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
             
-            document.querySelectorAll('.matched-filter').forEach(btn => {
-                btn.classList.add('active');
-            });
-            
-            // Filter and display matched items
+            // Show matched items in lost and found sections
             const matchedLostItems = allItems.lost.filter(item => item.matched === true);
             const matchedFoundItems = allItems.found.filter(item => item.matched === true);
             
-            // Render matched items
             renderFilteredItems('lost', matchedLostItems);
             renderFilteredItems('found', matchedFoundItems);
             
-            // Show message if no matches
             if (matchedLostItems.length === 0 && matchedFoundItems.length === 0) {
-                showToast('No matched items found. Mark items as matched using the handshake button.', 'info');
+                showToast('No matched items found in lost/found sections.', 'info');
             }
         }
 
@@ -3315,138 +3700,11 @@
             container.innerHTML = items.map(item => createItemCard(item, type)).join('');
         }
 
-        // ===== CLAIM ITEM WITH EMAIL NOTIFICATION =====
-        async function claimItem(type, id) {
-            const items = type === 'lost' ? allItems.lost : allItems.found;
-            const item = items.find(i => i.id === id);
-
-            if (!item) {
-                showToast('Item not found.', 'error');
-                return;
-            }
-
-            if (!currentUser) {
-                showToast('Please login to claim items.', 'error');
-                return;
-            }
-
-            // Check if user is claiming their own item
-            if (item.userId === currentUser.userId) {
-                showToast('This is your own item!', 'info');
-                return;
-            }
-
-            // Prepare claimer details
-            const claimerDetails = {
-                name: currentUser.name,
-                email: currentUser.email,
-                phone: currentUser.phone || 'Not provided'
-            };
-
-            // Determine recipient email
-            const recipientEmail = item.email || item.userEmail;
-            const recipientName = item.name || item.userName || 'User';
-
-            if (!recipientEmail) {
-                showToast('Cannot send notification: Recipient email not available.', 'error');
-                return;
-            }
-
-            // Show confirmation dialog
-            const confirmation = confirm(`Do you want to notify ${recipientName} about this potential match? An email will be sent to them.`);
-            
-            if (!confirmation) {
-                showToast('Notification cancelled.', 'info');
-                return;
-            }
-
-            // Show loading toast
-            const loadingToast = showToast('Sending notification email...', 'info', 30000);
-
-            try {
-                // Send email notification
-                const emailSent = await sendNotificationEmail(
-                    recipientEmail,
-                    recipientName,
-                    item,
-                    claimerDetails,
-                    type
-                );
-
-                if (emailSent) {
-                    showToast(`Notification sent to ${recipientName}! They will contact you soon.`, 'success');
-                    
-                    // Also show contact information to the user
-                    const contactInfo = `
-                        <strong>Contact Information:</strong><br>
-                        ${recipientName}<br>
-                        Email: ${recipientEmail}<br>
-                        ${item.phone ? `Phone: ${item.phone}` : ''}
-                    `;
-                    
-                    // Create a more detailed message
-                    const message = type === 'lost' 
-                        ? `You think you found "${item.item}". The owner has been notified and will contact you.`
-                        : `You think "${item.item}" is yours. The finder has been notified and will contact you.`;
-                    
-                    showToast(message, 'info', 10000);
-                } else {
-                    showToast('Failed to send email. Please contact them directly.', 'error');
-                }
-
-            } catch (error) {
-                console.error('Error sending notification:', error);
-                showToast('Failed to send notification. Please try again later.', 'error');
-            }
-        }
-
-        // ===== MATCH ALGORITHM =====
-        function checkForMatches() {
-            const lostItems = allItems.lost.filter(item => !item.matched);
-            const foundItems = allItems.found.filter(item => !item.matched);
-
-            let matchesFound = 0;
-
-            foundItems.forEach(foundItem => {
-                const potentialMatches = lostItems.filter(lostItem => {
-                    const itemSimilarity = compareStrings(foundItem.item, lostItem.item);
-                    const locationSimilarity = compareStrings(foundItem.location, lostItem.location);
-                    const categoryMatch = foundItem.category === lostItem.category;
-                    const colorMatch = foundItem.color && lostItem.color && 
-                                     compareStrings(foundItem.color, lostItem.color);
-                    const brandMatch = foundItem.brand && lostItem.brand && 
-                                     compareStrings(foundItem.brand, lostItem.brand);
-
-                    return (itemSimilarity > 0.7 || (categoryMatch && (colorMatch || brandMatch))) && 
-                           (locationSimilarity > 0.5 || foundItem.location === lostItem.location);
-                });
-
-                if (potentialMatches.length > 0 && matchesFound === 0) {
-                    showToast(`Found ${potentialMatches.length} potential match(es) for "${foundItem.item}"`, 'info');
-                    matchesFound++;
-                }
-            });
-        }
-
-        function compareStrings(str1, str2) {
-            if (!str1 || !str2) return 0;
-            const s1 = str1.toLowerCase();
-            const s2 = str2.toLowerCase();
-
-            if (s1.includes(s2) || s2.includes(s1)) return 1;
-
-            const longer = s1.length > s2.length ? s1 : s2;
-            const shorter = s1.length > s2.length ? s2 : s1;
-
-            if (longer.length === 0) return 1;
-            return (longer.length - longer.split('').filter((c, i) => c !== shorter[i]).length) / longer.length;
-        }
-
         // ===== STATS MANAGEMENT =====
         function updateStats() {
             stats.lost = allItems.lost.length;
             stats.found = allItems.found.length;
-            stats.matched = [...allItems.lost, ...allItems.found].filter(item => item.matched).length;
+            stats.matched = allItems.matched.length;
 
             document.getElementById('lostCount').textContent = stats.lost;
             document.getElementById('foundCount').textContent = stats.found;
