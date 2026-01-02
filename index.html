@@ -437,17 +437,6 @@
             box-shadow: var(--shadow-lg);
         }
 
-        .stat-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            color: white;
-        }
-
         .stat-icon.lost {
             background: var(--warning-gradient);
         }
@@ -3022,11 +3011,26 @@
             container.innerHTML = items.map(item => createItemCard(item, type)).join('');
         }
 
+        // ===== HELPER FUNCTION TO CHECK ITEM OWNERSHIP =====
+        function isItemOwner(item) {
+            if (!currentUser) return false;
+            
+            // Check multiple ways to determine ownership for backward compatibility
+            if (item.userId && item.userId === currentUser.userId) return true;
+            if (item.userEmail && item.userEmail === currentUser.email) return true;
+            if (item.email && item.email === currentUser.email) return true;
+            
+            // For backward compatibility, also check if the name matches
+            if (item.name && item.name === currentUser.name) return true;
+            
+            return false;
+        }
+
         function createItemCard(item, type) {
             const isLost = type === 'lost' || (type === 'matched' && item.originalType === 'lost');
             const isFound = type === 'found' || (type === 'matched' && item.originalType === 'found');
             const isMatched = type === 'matched';
-            const isOwner = currentUser && item.userId === currentUser.userId;
+            const isOwner = isItemOwner(item);
             const date = new Date(item.date || item.timestamp?.toDate());
             const formattedDate = date.toLocaleDateString('en-US', {
                 weekday: 'short',
@@ -3122,8 +3126,8 @@
                     ` : ''}
                     
                     <div class="item-actions">
-                        ${isOwner && !isMatched ? `
-                            ${!item.matched ? `
+                        ${isOwner ? `
+                            ${!isMatched && !item.matched ? `
                                 <button class="btn btn-outline btn-icon" onclick="markAsMatched('${type}', '${item.id}')" 
                                         title="Mark as Matched">
                                     <i class="fas fa-handshake"></i>
@@ -3133,21 +3137,13 @@
                                     <i class="fas fa-edit"></i>
                                 </button>
                             ` : ''}
-                            <button class="btn btn-outline btn-icon" onclick="deleteItem('${type}', '${item.id}')" 
+                            <button class="btn btn-outline btn-icon" onclick="deleteItem('${isMatched ? 'matched' : type}', '${item.id}')" 
                                     title="Delete Item">
                                 <i class="fas fa-trash"></i>
                             </button>
                         ` : !isMatched ? `
                             <button class="btn btn-outline" onclick="claimItem('${type}', '${item.id}')">
                                 <i class="fas fa-${isLost ? 'hand-holding' : 'flag'}"></i> ${isLost ? 'I think I found this' : 'I think this is mine'}
-                            </button>
-                        ` : isOwner ? `
-                            <button class="btn btn-outline" onclick="unmatchItem('${item.id}')">
-                                <i class="fas fa-undo"></i> Return to original list
-                            </button>
-                            <button class="btn btn-outline btn-icon" onclick="deleteItem('matched', '${item.id}')" 
-                                    title="Delete Item">
-                                <i class="fas fa-trash"></i>
                             </button>
                         ` : ''}
                     </div>
@@ -3192,9 +3188,8 @@
                     userId: currentUser.userId,
                     userName: currentUser.name,
                     userUsername: currentUser.username,
-                    userEmail: currentUser.email || '',
-                    matched: false,
-                    originalType: 'lost'
+                    userEmail: currentUser.email,
+                    matched: false
                 };
 
                 if (lostImages.length > 0) {
@@ -3262,9 +3257,8 @@
                     userId: currentUser.userId,
                     userName: currentUser.name,
                     userUsername: currentUser.username,
-                    userEmail: currentUser.email || '',
-                    matched: false,
-                    originalType: 'found'
+                    userEmail: currentUser.email,
+                    matched: false
                 };
 
                 if (foundImages.length > 0) {
@@ -3308,36 +3302,61 @@
             }
 
             try {
-                const dbCollection = type === 'lost' ? 'lostItems' : 
-                                   type === 'found' ? 'foundItems' : 
-                                   'matchedItems';
-                const itemRef = db.collection(dbCollection).doc(id);
+                let dbCollection;
+                switch(type) {
+                    case 'lost':
+                        dbCollection = db.collection('lostItems');
+                        break;
+                    case 'found':
+                        dbCollection = db.collection('foundItems');
+                        break;
+                    case 'matched':
+                        dbCollection = db.collection('matchedItems');
+                        break;
+                    default:
+                        showToast('Invalid item type.', 'error');
+                        return;
+                }
+
+                const itemRef = dbCollection.doc(id);
                 const itemDoc = await itemRef.get();
 
-                if (itemDoc.exists) {
-                    const itemData = itemDoc.data();
-
-                    if (itemData.userId === currentUser.userId) {
-                        if (confirm('Are you sure you want to delete your item?')) {
-                            await itemRef.delete();
-
-                            const collection = type === 'lost' ? allItems.lost : 
-                                            type === 'found' ? allItems.found : 
-                                            allItems.matched;
-                            const index = collection.findIndex(item => item.id === id);
-                            if (index !== -1) collection.splice(index, 1);
-
-                            showToast('Your item has been deleted.', 'success');
-                            renderLists();
-                            updateStats();
-                        }
-                    } else {
-                        showToast('You can only delete your own items.', 'error');
-                    }
+                if (!itemDoc.exists) {
+                    showToast('Item not found.', 'error');
+                    return;
                 }
+
+                const itemData = itemDoc.data();
+
+                // Check ownership using the same method as in createItemCard
+                if (!isItemOwner(itemData)) {
+                    showToast('You can only delete your own items.', 'error');
+                    return;
+                }
+
+                // Confirm deletion
+                if (!confirm('Are you sure you want to delete this item?')) {
+                    return;
+                }
+
+                // Delete from Firestore
+                await itemRef.delete();
+
+                // Remove from local arrays
+                const allItemsArray = allItems[type];
+                const itemIndex = allItemsArray.findIndex(item => item.id === id);
+                if (itemIndex !== -1) {
+                    allItemsArray.splice(itemIndex, 1);
+                }
+
+                // Update UI
+                renderLists();
+                updateStats();
+                showToast('Item deleted successfully.', 'success');
+
             } catch (error) {
-                console.error('Error:', error);
-                showToast('Failed to delete.', 'error');
+                console.error('Error deleting item:', error);
+                showToast('Failed to delete item. Please try again.', 'error');
             }
         }
 
@@ -3352,7 +3371,8 @@
 
             if (!item) return;
 
-            if (item.userId !== currentUser.userId) {
+            // Check ownership
+            if (!isItemOwner(item)) {
                 showToast('You can only edit your own items.', 'error');
                 return;
             }
@@ -3387,43 +3407,57 @@
                     lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
                 };
 
-                const dbCollection = currentEditType === 'lost' ? 'lostItems' : 'foundItems';
-                const itemRef = db.collection(dbCollection).doc(currentEditId);
+                const dbCollection = currentEditType === 'lost' ? db.collection('lostItems') : db.collection('foundItems');
+                const itemRef = dbCollection.doc(currentEditId);
                 const itemDoc = await itemRef.get();
 
-                if (itemDoc.exists && itemDoc.data().userId === currentUser.userId) {
-                    await itemRef.update(updatedData);
-
-                    const collection = currentEditType === 'lost' ? allItems.lost : allItems.found;
-                    const index = collection.findIndex(item => item.id === currentEditId);
-                    if (index !== -1) {
-                        collection[index] = { ...collection[index], ...updatedData };
-                    }
-
-                    closeModal();
-                    renderLists();
-                    showToast('Item updated!', 'success');
-                } else {
-                    showToast('You can only edit your own items.', 'error');
+                if (!itemDoc.exists) {
+                    showToast('Item not found.', 'error');
+                    return;
                 }
+
+                const itemData = itemDoc.data();
+                
+                // Check ownership
+                if (!isItemOwner(itemData)) {
+                    showToast('You can only edit your own items.', 'error');
+                    return;
+                }
+
+                await itemRef.update(updatedData);
+
+                // Update local array
+                const collection = currentEditType === 'lost' ? allItems.lost : allItems.found;
+                const index = collection.findIndex(item => item.id === currentEditId);
+                if (index !== -1) {
+                    collection[index] = { ...collection[index], ...updatedData };
+                }
+
+                closeModal();
+                renderLists();
+                showToast('Item updated successfully!', 'success');
+
             } catch (error) {
                 console.error('Error:', error);
-                showToast('Failed to update.', 'error');
+                showToast('Failed to update item.', 'error');
             }
         }
 
         async function markAsMatched(type, id) {
             try {
-                await db.collection(type === 'lost' ? 'lostItems' : 'foundItems')
-                    .doc(id)
-                    .update({
-                        matched: true,
-                        matchedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
+                const dbCollection = type === 'lost' ? db.collection('lostItems') : db.collection('foundItems');
+                await dbCollection.doc(id).update({
+                    matched: true,
+                    matchedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
 
+                // Update local array
                 const collection = type === 'lost' ? allItems.lost : allItems.found;
                 const item = collection.find(i => i.id === id);
-                if (item) item.matched = true;
+                if (item) {
+                    item.matched = true;
+                    item.matchedAt = new Date().toISOString();
+                }
 
                 showToast('Item marked as matched!', 'success');
                 renderLists();
@@ -3450,7 +3484,7 @@
             }
 
             // Check if user is claiming their own item
-            if (item.userId === currentUser.userId) {
+            if (isItemOwner(item)) {
                 showToast('This is your own item!', 'info');
                 return;
             }
@@ -3470,25 +3504,21 @@
                     matchedWith: currentUser.name,
                     matchedWithEmail: currentUser.email,
                     matchedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    originalType: type,
-                    claimedBy: currentUser.userId,
-                    claimedByName: currentUser.name,
-                    claimedAt: new Date().toISOString()
+                    originalType: type
                 };
 
                 // Add to matched items collection
                 const matchedRef = await db.collection('matchedItems').add(matchedItemData);
                 
                 // Remove from original collection
-                await db.collection(type === 'lost' ? 'lostItems' : 'foundItems')
-                    .doc(id)
-                    .delete();
+                const originalCollection = type === 'lost' ? db.collection('lostItems') : db.collection('foundItems');
+                await originalCollection.doc(id).delete();
 
                 // Update local arrays
-                const originalCollection = type === 'lost' ? allItems.lost : allItems.found;
-                const originalIndex = originalCollection.findIndex(i => i.id === id);
+                const originalItemsArray = type === 'lost' ? allItems.lost : allItems.found;
+                const originalIndex = originalItemsArray.findIndex(i => i.id === id);
                 if (originalIndex !== -1) {
-                    originalCollection.splice(originalIndex, 1);
+                    originalItemsArray.splice(originalIndex, 1);
                 }
 
                 // Add to matched items
@@ -3538,9 +3568,13 @@
             }
 
             const item = allItems.matched.find(i => i.id === id);
-            if (!item) return;
+            if (!item) {
+                showToast('Item not found.', 'error');
+                return;
+            }
 
-            if (item.userId !== currentUser.userId) {
+            // Check ownership
+            if (!isItemOwner(item)) {
                 showToast('You can only return your own items to the original list.', 'error');
                 return;
             }
@@ -3552,11 +3586,16 @@
                 // Remove from matched items
                 await db.collection('matchedItems').doc(id).delete();
 
+                // Prepare data for original collection
+                const { matchedWith, matchedWithEmail, matchedAt, originalType, id: oldId, ...originalItemData } = item;
+
                 // Add back to original collection
                 const originalCollection = item.originalType === 'lost' ? 'lostItems' : 'foundItems';
-                const { matchedWith, matchedWithEmail, matchedAt, originalType, claimedBy, claimedByName, claimedAt, ...originalItemData } = item;
-                
-                const docRef = await db.collection(originalCollection).add(originalItemData);
+                const originalRef = db.collection(originalCollection);
+                const docRef = await originalRef.add({
+                    ...originalItemData,
+                    matched: false
+                });
 
                 // Update local arrays
                 const matchedIndex = allItems.matched.findIndex(i => i.id === id);
@@ -3564,10 +3603,11 @@
                     allItems.matched.splice(matchedIndex, 1);
                 }
 
+                const newItem = { id: docRef.id, ...originalItemData, matched: false };
                 if (item.originalType === 'lost') {
-                    allItems.lost.unshift({ id: docRef.id, ...originalItemData });
+                    allItems.lost.unshift(newItem);
                 } else {
-                    allItems.found.unshift({ id: docRef.id, ...originalItemData });
+                    allItems.found.unshift(newItem);
                 }
 
                 renderLists();
